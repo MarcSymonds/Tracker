@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="preference_colour_picker_default_colours" translatable="false">
+        <item>196</item>
+        <item>280</item>
+        <item>75</item>
+        <item>40</item>
+        <item>16</item>
+        <item>206</item>
+        <item>270</item>
+        <item>90</item>
+        <item>30</item>
+        <item>6</item>
+        <item>180</item>
+        <item>140</item>
+        <item>330</item>
+        <item>60</item>
+        <item>120</item>
+        <item>240</item>
+    </string-array>
+</resources>

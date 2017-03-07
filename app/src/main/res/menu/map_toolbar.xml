@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:title="Item"
+        android:id="@+id/mtMyLocation"
+        android:checkable="true"
+        android:showAsAction="always"
+        android:icon="@drawable/common_google_signin_btn_icon_dark" />
+    <group >
+        <item android:title="Track"
+            android:id="@+id/mtTrack"
+            android:showAsAction="always"
+            android:checkable="true"
+            android:icon="@mipmap/ic_launcher" />
+    </group>
+</menu>

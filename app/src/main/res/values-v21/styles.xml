@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="AppTheme.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <!--  <item name="android:statusBarColor">@android:color/transparent</item> -->
+    </style>
+
+    <style name="TrackedItemButton" parent="Widget.AppCompat.Button.Colored">
+        <item name="android:colorButtonNormal">#FF9933FF</item>
+        <item name="android:color">#FF0000</item>
+        <item name="android:colorBackground">#00FF00</item>
+    </style>
+
+</resources>

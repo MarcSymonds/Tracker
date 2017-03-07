@@ -1,0 +1,62 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <android.support.design.widget.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:theme="@style/AppTheme.AppBarOverlay">
+
+        <android.support.v7.widget.Toolbar
+            android:id="@+id/appBarToolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?android:attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            android:minHeight="0dp"
+            android:theme="@style/AppTheme.AppBarOverlay"
+            app:popupTheme="@style/AppTheme.PopupOverlay"
+            app:title="@string/app_name"
+            tools:layout_height="@dimen/tool_bar_height" />
+    </android.support.design.widget.AppBarLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:gravity="center_vertical|start"
+        android:orientation="horizontal"
+        android:paddingLeft="8dp"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:paddingRight="8dp">
+
+        <ImageButton
+            android:id="@+id/butMyLocation"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:maxWidth="50dp"
+            android:onClick="myLocationButtonClick"
+            android:padding="6dp"
+            android:scaleType="fitCenter"
+            android:contentDescription="@string/follow_my_location"
+            app:srcCompat="@drawable/img_my_location_off" />
+
+        <LinearLayout
+            android:id="@+id/layTrackedItemButtons"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:weightSum="1" />
+    </LinearLayout>
+
+    <fragment
+        android:id="@+id/activityTrackerMap"
+        android:name="me.marcsymonds.tracker.MapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:layout="@layout/fragment_map" />
+
+</LinearLayout>

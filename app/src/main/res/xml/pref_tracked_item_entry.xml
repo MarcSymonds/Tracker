@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory android:title="@string/details">
+        <EditTextPreference
+            android:defaultValue=""
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/name"
+            android:key="tracked_item_name"
+            android:hint="@string/tracked_item_name_hint" />
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:title="@string/enabled"
+            android:key="tracked_item_enabled"
+            android:summaryOn="@string/tracked_item_enable_on"
+            android:summaryOff="@string/tracked_item_enable_off" />
+
+        <me.marcsymonds.tracker.ColourPickerPreference
+            android:defaultValue="0"
+            android:key="tracked_item_colour"
+            android:title="@string/colour"
+            android:summary="@string/tracked_item_colour_summary" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/device">
+        <ListPreference
+            android:defaultValue="TK103A"
+            android:title="@string/device_type"
+            android:entries="@array/tracker_names"
+            android:entryValues="@array/tracker_names"
+            android:key="tracked_item_device_type" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Ping">
+
+        <EditTextPreference
+            android:defaultValue=""
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/country_code"
+            android:phoneNumber="true"
+            android:key="tracked_item_telephone_country_code"
+            android:hint="@string/tracked_item_telephone_country_code_hint"/>
+
+        <EditTextPreference
+            android:defaultValue=""
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/telephone_number"
+            android:phoneNumber="true"
+            android:key="tracked_item_telephone_number"
+            android:hint="@string/tracked_item_telephone_number_hint"/>
+
+        <EditTextPreference
+            android:defaultValue=""
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/ping_command"
+            android:key="tracked_item_ping_command"
+            android:hint="@string/tracked_item_ping_command_hint"/>
+
+        <EditTextPreference
+            android:defaultValue="1"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/number_of_expected_responses"
+            android:numeric="integer"
+            android:maxLength="3"
+            android:key="tracked_item_expected_responses"
+            android:summary="3" />
+
+        <EditTextPreference
+            android:defaultValue="30"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/seconds_between_responses"
+            android:numeric="integer"
+            android:maxLength="4"
+            android:key="tracked_item_seconds_between_responses"
+            android:summary="30" />
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:title="@string/auto_resend_ping_cmd"
+            android:key="tracked_item_auto_ping"
+            android:switchTextOff="@string/tracked_item_auto_ping_off"
+            android:switchTextOn="@string/tracked_item_auto_ping_on"
+            android:summaryOff="@string/tracked_item_auto_ping_off"
+            android:summaryOn="@string/tracked_item_auto_ping_on" />
+        <EditTextPreference
+            android:defaultValue="60"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/seconds_between_resends"
+            android:key="tracked_item_ping_interval"
+            android:dependency="tracked_item_auto_ping"
+            android:numeric="integer"
+            android:maxLength="4"
+            android:summary="120" />
+
+    </PreferenceCategory>
+</PreferenceScreen>

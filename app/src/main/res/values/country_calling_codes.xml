@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="country_calling_codes">
+        <item>44|UK</item>
+    </string-array>
+</resources>

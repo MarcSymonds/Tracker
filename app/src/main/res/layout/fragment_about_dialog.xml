@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<me.marcsymonds.tracker.AboutDialogFrame xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_height="wrap_content"
+    android:clickable="true"
+    android:padding="5dp"
+    android:theme="@style/AboutBox.Frame"
+    android:id="@+id/about_box_frame"
+    android:layout_width="250dp">
+
+    <TableLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:stretchColumns="*"
+        android:theme="@style/AboutBox">
+
+        <TableRow>
+            <ImageView
+                android:layout_width="70dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start|center"
+                android:contentDescription="@string/app_name"
+                android:src="@drawable/icon" />
+
+            <TableLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start">
+
+                <TableRow>
+                    <TextView
+                        android:id="@+id/about_title"
+                        android:layout_width="fill_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/app_name"
+                        android:textSize="24sp"
+                        android:layout_span="2"
+                        android:paddingBottom="10dp"
+                        android:textColor="?attr/colorAccent"
+                        android:textStyle="normal|bold"
+                        android:layout_gravity="center_horizontal" />
+                </TableRow>
+                <TableRow>
+
+                    <TextView
+                        android:text="@string/about_version_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingBottom="4dp"
+                        android:textStyle="bold"
+                        android:labelFor="@+id/about_version_number"
+                        android:paddingEnd="4dp"
+                        android:paddingLeft="0dp"
+                        android:paddingRight="4dp"
+                        android:paddingStart="0dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/about_version_number" />
+
+                </TableRow>
+                <TableRow>
+
+                    <TextView
+                        android:text="@string/about_copyright_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textStyle="bold"
+                        android:labelFor="@+id/about_copyright"
+                        android:paddingRight="4dp"
+                        android:paddingLeft="0dp"
+                        android:paddingEnd="4dp"
+                        android:paddingStart="0dp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/about_copyright"
+                        android:minWidth="40dp" />
+
+                </TableRow>
+
+            </TableLayout>
+        </TableRow>
+
+<TableRow>
+                        <TextView
+                            android:id="@+id/legal_text"
+                            android:layout_width="fill_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_margin="8dip"
+                            android:layout_span="2"
+                            android:padding="2dp"
+                            android:text=""
+                            android:textColor="#cccccc"
+                            android:textSize="12sp"
+                            android:textStyle="italic" />
+                    </TableRow>
+
+
+    </TableLayout>
+</me.marcsymonds.tracker.AboutDialogFrame>

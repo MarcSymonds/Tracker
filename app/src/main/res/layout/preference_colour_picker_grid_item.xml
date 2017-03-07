@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="@dimen/colour_picker_grid_item_size"
+    android:layout_height="@dimen/colour_picker_grid_item_size"
+    android:background="?android:selectableItemBackground">
+
+    <ImageView
+        android:id="@+id/preference_colour_picker_view"
+        android:layout_width="@dimen/colour_picker_grid_item_circle_size"
+        android:layout_height="@dimen/colour_picker_grid_item_circle_size"
+        android:layout_gravity="center"
+        android:scaleType="fitXY"
+        tools:ignore="ContentDescription"
+        android:layout_margin="0dp" />
+</FrameLayout>

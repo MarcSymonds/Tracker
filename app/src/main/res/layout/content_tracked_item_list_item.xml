@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingBottom="0dp"
+    android:paddingEnd="16dp"
+    android:paddingStart="16dp"
+    android:paddingTop="0dp"
+    android:minHeight="40dp">
+
+    <CheckBox
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/tracked_item_selected"
+        android:visibility="visible"
+        android:padding="0dp"
+        android:paddingTop="0dp"
+        android:paddingBottom="0dp"
+        android:focusable="false"
+        style="@style/Widget.AppCompat.CompoundButton.CheckBox"
+        android:layout_gravity="center_vertical|start" />
+
+    <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/tracked_item_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical|start"
+        android:layout_marginEnd="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_weight="1"
+        android:clickable="true"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        android:padding="4dp"
+        android:longClickable="true">
+    </TextView>
+
+    <Switch
+        android:id="@+id/tracked_item_enabled"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical|end" />
+</LinearLayout>

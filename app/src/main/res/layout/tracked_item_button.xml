@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <Button
+        android:id="@+id/butTrackedItem"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="0dp"
+        android:elevation="0dp"
+        android:gravity="top"
+        android:longClickable="true"
+        android:minWidth="68dip"
+        android:padding="8dp"
+        android:tag="butTrackedItem"
+        android:text="@string/button"
+        android:textAlignment="center"
+        android:textAllCaps="false" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/butTrackedItem"
+        android:layout_alignBottom="@+id/butTrackedItem"
+        android:layout_alignParentBottom="false"
+        android:layout_alignParentTop="false"
+        android:layout_centerHorizontal="true"
+        android:elevation="@dimen/tracked_item_button_image_elevation"
+        android:orientation="horizontal"
+        android:paddingTop="4dp">
+
+        <ImageView
+            android:id="@+id/imgTrackedItemFollow"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginRight="4dp"
+            android:clickable="false"
+            android:contentDescription="@string/following"
+            android:cropToPadding="false"
+            android:longClickable="false"
+            android:tag="imgTrackedItem"
+            app:srcCompat="@drawable/img_my_location_off2"
+            tools:ignore="RtlHardcoded" />
+
+        <ImageView
+            android:id="@+id/imgTrackedItemPing"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginLeft="4dp"
+            android:clickable="false"
+            android:contentDescription="@string/pinging"
+            android:longClickable="false"
+            app:srcCompat="@drawable/img_ping_off"
+            tools:ignore="RtlHardcoded" />
+
+    </LinearLayout>
+
+</RelativeLayout>

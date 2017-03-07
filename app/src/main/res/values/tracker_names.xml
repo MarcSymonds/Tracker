@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="tracker_names">
+        <item>TK103A</item>
+    </string-array>
+</resources>
