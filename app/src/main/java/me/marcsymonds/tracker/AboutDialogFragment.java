@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.Html;
 import android.view.LayoutInflater;
@@ -26,8 +27,7 @@ public class AboutDialogFragment extends android.support.v4.app.DialogFragment {
     }
 
     public static AboutDialogFragment newInstance() {
-        AboutDialogFragment fragment = new AboutDialogFragment();
-        return fragment;
+        return new AboutDialogFragment();
     }
 
     @Override
@@ -35,8 +35,8 @@ public class AboutDialogFragment extends android.support.v4.app.DialogFragment {
         super.onCreate(savedInstanceState);
     }
 
-    @Override
-    public Dialog onCreateDialog(Bundle savedInstanceState) {
+    @Override @NonNull
+    public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
         Dialog d = super.onCreateDialog(savedInstanceState);
 
         d.requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -93,7 +93,7 @@ public class AboutDialogFragment extends android.support.v4.app.DialogFragment {
 
     @Nullable
     private static String readRawTextFile(Context context, int id) {
-        String output = null;
+        String output;
 
         try {
             InputStream inputStream = context.getResources().openRawResource(id);
