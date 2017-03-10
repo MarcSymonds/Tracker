@@ -29,8 +29,6 @@
         <item name="android:background">#ff9999ff</item>
     </style>
 
-    <style name="MapToolbar" parent="AppTheme"></style>
-
     <style name="TrackedItemButton" parent="Widget.AppCompat.Button.Colored">
         <item name="colorButtonNormal">#FF9933FF</item>
         <item name="color">#FF3399FF</item>

@@ -1,34 +1,21 @@
 package me.marcsymonds.tracker;
 
-import android.content.Intent;
 import android.content.SharedPreferences;
-import android.media.Ringtone;
-import android.media.RingtoneManager;
-import android.net.Uri;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
-import android.preference.PreferenceActivity;
 import android.preference.PreferenceFragment;
-import android.preference.PreferenceGroup;
 import android.preference.PreferenceManager;
-import android.preference.RingtonePreference;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.AppCompatActivity;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.ListAdapter;
-
-import java.util.Map;
 
 public class TrackedItemEntryActivity extends AppCompatPreferenceActivity {
     final private String TAG = "TrackerItemEntryAct";
 
-    private Menu mOptionsMenu;
     private int mTrackedItemID = 0;
 
     @Override
@@ -51,7 +38,9 @@ public class TrackedItemEntryActivity extends AppCompatPreferenceActivity {
 
         if (mTrackedItemID > 0) {
             TrackedItem trackedItem = TrackedItems.getItemByID(mTrackedItemID);
-            trackedItem.putToSharedPreferences(sp);
+            if (trackedItem != null) {
+                trackedItem.putToSharedPreferences(sp);
+            }
         }
         else {
             TrackedItem.clearSharedPreferences(sp);
@@ -63,7 +52,6 @@ public class TrackedItemEntryActivity extends AppCompatPreferenceActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        mOptionsMenu = menu;
         getMenuInflater().inflate(R.menu.menu_tracked_item_entry, menu);
         return true;
     }
@@ -135,13 +123,18 @@ public class TrackedItemEntryActivity extends AppCompatPreferenceActivity {
             TrackedItems.add(trackedItem);
         }
 
-        trackedItem.getFromSharedPreferences(PreferenceManager.getDefaultSharedPreferences(this));
-        TrackedItems.saveTrackedItem(trackedItem);
+        if (trackedItem != null) {
+            trackedItem.getFromSharedPreferences(PreferenceManager.getDefaultSharedPreferences(this));
+            trackedItem.saveToFile();
 
-        return trackedItem.getID();
+            return trackedItem.getID();
+        }
+        else {
+            return 0;
+        }
     }
 
-    private static Preference.OnPreferenceChangeListener sBindPreferenceSummaryToValueListener = new Preference.OnPreferenceChangeListener() {
+    private static final Preference.OnPreferenceChangeListener sBindPreferenceSummaryToValueListener = new Preference.OnPreferenceChangeListener() {
         @Override
         public boolean onPreferenceChange(Preference preference, Object value) {
             String stringValue = value.toString();
@@ -207,11 +200,9 @@ public class TrackedItemEntryActivity extends AppCompatPreferenceActivity {
         @Override
         public boolean onOptionsItemSelected(MenuItem item) {
             int id = item.getItemId();
-            if (id == android.R.id.home) {
-                return true;
-            }
 
-            return super.onOptionsItemSelected(item);
+            return id == android.R.id.home || super.onOptionsItemSelected(item);
+
         }
     }
 }

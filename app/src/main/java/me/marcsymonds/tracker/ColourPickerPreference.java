@@ -10,10 +10,6 @@ import android.util.Log;
 import android.view.View;
 
 /**
- * Created by Marc on 20/02/2017.
- */
-
-/**
  * This class (and associated objects) are based on a colour (color) picker widget by Kizito Nwose,
  * which can be found at https://github.com/kizitonwose/colorpreference.
  *
@@ -23,10 +19,9 @@ import android.view.View;
 public class ColourPickerPreference extends Preference implements ColourPickerDialog.OnColourSelectedListener {
     private final String TAG = "ColourPickerPreference";
 
-    private Context mContext;
+    private final Context mContext;
     private int mColour = 0;
     private int[] mColourChoices = {};
-    private View mPreviewView;
 
     public ColourPickerPreference(Context context) {
         super(context);
@@ -75,19 +70,19 @@ public class ColourPickerPreference extends Preference implements ColourPickerDi
     @Override
     protected void onBindView(View view) {
         super.onBindView(view);
-        mPreviewView = view.findViewById(R.id.preference_colour_picker_preview_colour);
+        View preview = view.findViewById(R.id.preference_colour_picker_preview_colour);
         ColourPickerUtils.setColourViewValue(
-                mPreviewView,
+                preview,
                 Color.HSVToColor(new float [] {mColour, 1, 1}),
                 false,
                 2);
     }
 
-    public int getColour() {
+    private int getColour() {
         return mColour;
     }
 
-    public void setColour(int colour) {
+    private void setColour(int colour) {
         Log.d(TAG, String.format("setColour %d - Has Key:%s, Is Persistent:%s", colour, hasKey() ? "YES" : "NO", isPersistent() ? "YES" : "NO"));
         if (callChangeListener(colour)) {
             mColour = colour;
@@ -146,7 +141,7 @@ public class ColourPickerPreference extends Preference implements ColourPickerDi
         }
     }
 
-    public String getFragmentTag() {
+    private String getFragmentTag() {
         return "colour_" + getKey();
     }
 

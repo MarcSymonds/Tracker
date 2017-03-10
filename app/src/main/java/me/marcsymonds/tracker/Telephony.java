@@ -3,14 +3,10 @@ package me.marcsymonds.tracker;
 import android.content.Context;
 import java.util.ArrayList;
 
-/**
- * Created by Marc on 28/02/2017.
- */
+class Telephony {
+    private static final ArrayList<CountryCallingCode> mCCC = new ArrayList<>();
 
-public class Telephony {
-    private static ArrayList<CountryCallingCode> mCCC = new ArrayList<>();
-
-    public static void initialise(Context context) {
+    static void initialise(Context context) {
         String[] cccs = context.getResources().getStringArray(R.array.country_calling_codes);
 
         mCCC.clear();
@@ -19,7 +15,7 @@ public class Telephony {
         }
     }
 
-    public static boolean sameNumbers(String num1, String num2, String countryCode) {
+    static boolean sameNumbers(String num1, String num2, String countryCode) {
         if (num1.equals(num2)) {
             return true;
         }
@@ -71,8 +67,8 @@ public class Telephony {
     }
 
     public static class CountryCallingCode {
-        private String mCode;
-        private String mName;
+        private final String mCode;
+        private final String mName;
 
         CountryCallingCode(String data) {
             String[] values = data.split("|");

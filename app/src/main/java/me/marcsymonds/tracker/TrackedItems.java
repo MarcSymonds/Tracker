@@ -2,30 +2,36 @@ package me.marcsymonds.tracker;
 
 
 import android.app.Activity;
-import android.content.Context;
 import android.util.Log;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Locale;
 
 /**
  * Used for managing the list of tracked items.
  */
-public class TrackedItems {
+class TrackedItems {
     final static private String TAG = "TrackedItems";
 
     final static private String TRACKED_ITEMS_DIR = "TrackedItems";
-    final static private String TRACKED_ITEM_FILE_PREFIX = "TrackedItem";
+    final static private String TRACKED_ITEMS_HISTORY_DIR = "TrackedItemsHistory";
+    final static String TRACKED_ITEM_FILE_PREFIX = "TrackedItem";
 
-    public static Activity AppActivity = null;
+    //public static Activity AppActivity = null;
+
+    private static File mTrackedItemsSaveDir;
+    private static File mTrackedItemsHistoryDir;
 
     private static int mHighestID = 0;
-    private static ArrayList<TrackedItem> mItems = new ArrayList<>();
+    private static final ArrayList<TrackedItem> mItems = new ArrayList<>();
 
-    public static void initialise(Activity activity) {
-        AppActivity = activity;
+    static void initialise(Activity activity) {
+        mTrackedItemsSaveDir = activity.getDir(TRACKED_ITEMS_DIR, 0);
+        mTrackedItemsHistoryDir = activity.getDir(TRACKED_ITEMS_HISTORY_DIR, 0);
+
         loadTrackedItems();
     }
 
@@ -37,14 +43,22 @@ public class TrackedItems {
         mHighestID = highestID;
     }
 
-    static int loadTrackedItems() {
-        File dir = AppActivity.getDir(TRACKED_ITEMS_DIR, 0);
+    static File getTrackedItemsSaveDir() {
+        return mTrackedItemsSaveDir;
+    }
 
-        Log.d(TAG, String.format("Loading tracked items from %s", dir.getAbsolutePath()));
+    static File getTrackedItemsHistoryDir() {
+        return mTrackedItemsHistoryDir;
+    }
+
+    private static int loadTrackedItems() {
+        //File dir = activity.getDir(TRACKED_ITEMS_DIR, 0);
+
+        Log.d(TAG, String.format("Loading tracked items from %s", mTrackedItemsSaveDir.getAbsolutePath()));
 
         mItems.clear();
 
-        for (File file : dir.listFiles()) {
+        for (File file : mTrackedItemsSaveDir.listFiles()) {
             String fileName = file.getName();
             if (fileName.startsWith(TRACKED_ITEM_FILE_PREFIX)) {
                 int ID = Integer.parseInt(fileName.substring(TRACKED_ITEM_FILE_PREFIX.length() + 1));
@@ -59,10 +73,10 @@ public class TrackedItems {
                     item.loadHistory();
                 }
                 catch (FileNotFoundException nf) {
-                    Log.e(TAG, String.format("Unable to load tracked item file %s : %s", fileName, nf.toString()));
+                    Log.e(TAG, String.format("Tracked item file %s not found - %s", file.getAbsoluteFile(), nf.toString()));
                 }
                 catch (IOException io) {
-
+                    Log.e(TAG, String.format("IO Exception loading tracked item data from %s - %s", file.getAbsoluteFile(), io.toString()));
                 }
             }
         }
@@ -80,21 +94,22 @@ public class TrackedItems {
         return trackedItem.getID();
     }
 
-    public static void saveTrackedItem(TrackedItem item) {
-        File dir = AppActivity.getDir(TRACKED_ITEMS_DIR, 0);
-        File file = new File(dir, String.format("%s.%d", TRACKED_ITEM_FILE_PREFIX, item.getID()));
-        item.saveToFile(file);
-    }
+    //static void saveTrackedItem(Activity activity, TrackedItem item) {
+        //File dir = activity.getDir(TRACKED_ITEMS_DIR, 0);
+        //File file = new File(dir, String.format(Locale.getDefault(), "%s.%d", TRACKED_ITEM_FILE_PREFIX, item.getID()));
+//        item.saveToFile();//file);
+//    }
 
-    public static void deleteTrackedItem(TrackedItem item) {
-        File dir = AppActivity.getDir(TRACKED_ITEMS_DIR, 0);
-        File file = new File(dir, String.format("%s.%d", TRACKED_ITEM_FILE_PREFIX, item.getID()));
+    static void deleteTrackedItem(TrackedItem item) {
+        File file = new File(TrackedItems.getTrackedItemsSaveDir(), String.format(Locale.getDefault(), "%s.%d", TRACKED_ITEM_FILE_PREFIX, item.getID()));
 
         Log.d(TAG, String.format("Deleting file %s", file.getAbsolutePath()));
 
         if (file.exists()) {
             file.delete();
         }
+
+        item.deleteHistory();
 
         int i = mItems.indexOf(item);
         if (i >= 0) {
@@ -104,12 +119,12 @@ public class TrackedItems {
         item.removeMapMarker();
     }
 
-    public static int getNextID() {
+    private static int getNextID() {
         ++mHighestID;
         return mHighestID;
     }
 
-    public static TrackedItem getItemByID(int id) {
+    static TrackedItem getItemByID(int id) {
         for (TrackedItem item : mItems) {
             if (item.getID() == id) {
                 return item;
@@ -119,7 +134,7 @@ public class TrackedItems {
         return null;
     }
 
-    public static ArrayList<TrackedItem> getTrackedItemsList() {
+    static ArrayList<TrackedItem> getTrackedItemsList() {
         return mItems;
     }
 
@@ -127,7 +142,7 @@ public class TrackedItems {
         return mItems.size();
     }
 
-    public static TrackedItem item(int index) {
+    static TrackedItem item(int index) {
         return mItems.get(index);
     }
 }

@@ -4,7 +4,6 @@ import android.util.Log;
 
 import com.google.android.gms.maps.model.LatLng;
 
-import java.security.InvalidParameterException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -14,7 +13,7 @@ import java.util.Locale;
 
 // NB. There is another class named Location at android.location.Location.
 
-public class Location {
+class Location {
     private final static String TAG = "Location";
 
     private Date mDateTime;
@@ -36,14 +35,14 @@ public class Location {
         mDateTime = SimpleDateFormat.getDateTimeInstance().parse(values[0]);
         mLatitude = Double.parseDouble(values[1]);
         mLongitude = Double.parseDouble(values[2]);
-        mGPS = (values[3] == "1");
+        mGPS = (values[3].equals("1"));
     }
 
     Location(double latitude, double longitude, boolean gps) {
         this(Calendar.getInstance().getTime(), latitude, longitude, gps);
     }
 
-    Location(Date dateTime, double latitude, double longitude, boolean gps) {
+    private Location(Date dateTime, double latitude, double longitude, boolean gps) {
         mDateTime = dateTime;
         mLatitude = latitude;
         mLongitude = longitude;
@@ -55,7 +54,7 @@ public class Location {
     }
 
     public String toString() {
-        return String.format("%s|%f|%f|%d",
+        return String.format(Locale.getDefault(), "%s|%f|%f|%d",
                 SimpleDateFormat.getDateTimeInstance().format(mDateTime),
                 mLatitude,
                 mLongitude,

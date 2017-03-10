@@ -35,7 +35,7 @@ public class TrackedItemListActivity extends AppCompatActivity {
     private boolean mSelectMode = false;
     private Menu mOptionsMenu = null;
     private CharSequence mOptionsMenuTitle;
-    private ArrayList<Integer> mSelectedList = new ArrayList<>();
+    private final ArrayList<Integer> mSelectedList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -173,7 +173,9 @@ public class TrackedItemListActivity extends AppCompatActivity {
 
                 if (resultCode > 0) {
                     TrackedItem trackedItem = TrackedItems.getItemByID(resultCode);
-                    trackedItem.updateMapMarkerInfo();
+                    if (trackedItem != null) {
+                        trackedItem.updateMapMarkerInfo();
+                    }
                 }
 
                 sortList(ma);
@@ -287,7 +289,7 @@ public class TrackedItemListActivity extends AppCompatActivity {
 
         // As items are deleted from the list, this alters the positions of all the following items
         // in the array. This means that the list of selected positions (mSelectedList) need to be
-        // sorted so that we can removing items starting with the highest index and goind down to
+        // sorted so that we can removing items starting with the highest index and going down to
         // the item with the lowest index.
 
         Collections.sort(mSelectedList, new Comparator<Integer>() {
@@ -300,17 +302,20 @@ public class TrackedItemListActivity extends AppCompatActivity {
         for (int i : mSelectedList) {
             ti = adap.getItem(i);
 
-            Log.d(TAG, String.format("DELETING ITEM - Position:%d, ID:%d", i, ti.getID()));
+            if (ti != null) {
+                Log.d(TAG, String.format("DELETING ITEM - Position:%d, ID:%d", i, ti.getID()));
 
-            Log.d(TAG, String.format("Before del: adap:%d, items:%d", adap.getCount(), TrackedItems.getTrackedItemsList().size()));
-            adap.remove(ti);
-            Log.d(TAG, String.format("After del: adap:%d, items:%d", adap.getCount(), TrackedItems.getTrackedItemsList().size()));
-            TrackedItems.deleteTrackedItem(ti);
+                Log.d(TAG, String.format("Before del: adap:%d, items:%d", adap.getCount(), TrackedItems.getTrackedItemsList().size()));
+                adap.remove(ti);
+                Log.d(TAG, String.format("After del: adap:%d, items:%d", adap.getCount(), TrackedItems.getTrackedItemsList().size()));
+                TrackedItems.deleteTrackedItem(ti);
+            }
         }
 
         mSelectedList.clear();
 
-        adap.notifyDataSetChanged();
+        switchSelectMode(false);
+        //adap.notifyDataSetChanged();
     }
 
     /**
@@ -336,6 +341,7 @@ public class TrackedItemListActivity extends AppCompatActivity {
         @Override @NonNull
         public View getView(int position, View view, @NonNull ViewGroup parent) {
             boolean newView = false;
+            int itemColour;
 
             if (view == null) {
                 view = getLayoutInflater().inflate(R.layout.content_tracked_item_list_item, null);
@@ -343,27 +349,33 @@ public class TrackedItemListActivity extends AppCompatActivity {
             }
 
             TrackedItem item = getItem(position);
-            int itemColour = item.getColour();
+            if (item != null) {
+                itemColour = item.getColour();
+            }
+            else {
+                itemColour = 0;
+            }
 
-            view.setBackgroundColor(Color.HSVToColor(75, new float[] {(float)itemColour, 1, 1}));// ColourPickerUtils.hsv2rgb(itemColour, 1, 1));
+            view.setBackgroundColor(Color.HSVToColor(75, new float[] {(float)itemColour, 1, 1}));
 
             CheckBox cb = (CheckBox)view.findViewById(R.id.tracked_item_selected);
             if (mSelectMode) {
                 cb.setVisibility(View.VISIBLE);
                 cb.setTag(position);
 
-                cb.setChecked((mSelectedList.contains((Integer)position)));
+                cb.setChecked((mSelectedList.contains(position)));
             }
             else {
                 cb.setVisibility(View.GONE);
             }
 
             TextView tv = (TextView)view.findViewById(R.id.tracked_item_name);
-            tv.setText(item.getName());// + ":" + item.getID() + " " + position);
+            tv.setText(item == null ? "?" + String.valueOf(position) : item.getName());
             tv.setTag(position);
 
             Switch sw = (Switch)view.findViewById(R.id.tracked_item_enabled);
-            sw.setChecked(item.isEnabled());
+
+            sw.setChecked(item != null && item.isEnabled());
             sw.setTag(position);
 
             sw.setEnabled(!mSelectMode);
@@ -410,15 +422,19 @@ public class TrackedItemListActivity extends AppCompatActivity {
 
         private void onNameClicked(int position) {
             TrackedItem ti = this.getItem(position);
-            updateTrackedItem(ti.getID());
+            if (ti != null) {
+                updateTrackedItem(ti.getID());
+            }
         }
 
         private void onItemEnabledChanged(int position, boolean enabled) {
             Log.d(TAG, String.format("Enabled changed : %s %s", String.valueOf(position), (enabled ? "ON" : "OFF")));
 
             TrackedItem ti = this.getItem(position);
-            ti.setEnabled(enabled);
-            TrackedItems.saveTrackedItem(ti);
+            if (ti != null) {
+                ti.setEnabled(enabled);
+                ti.saveToFile();
+            }
         }
 
         /**

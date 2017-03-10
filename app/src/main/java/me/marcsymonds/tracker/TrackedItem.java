@@ -1,13 +1,14 @@
 package me.marcsymonds.tracker;
 
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import android.widget.Button;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
@@ -18,22 +19,15 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Created by Marc on 17/02/2017.
- */
-
 public class TrackedItem {
     final private String TAG = "TrackedItem";
 
-    final static private String HISTORY_DIR = "TrackedItemsHistory";
     final static private int MAX_HISTORY_FILES = 10;
     final static private int MAX_HISTORY_ENTRIES_PER_FILE = 3; // TODO: set proper value
     final static private int MAX_RECENT_HISTORY = 10;
@@ -65,7 +59,7 @@ public class TrackedItem {
         }
     }
 
-    // Permanent data for tracked item.
+    //private Activity mActivity;
 
     private int mID = 0;
     private boolean mEnabled = false;
@@ -80,13 +74,14 @@ public class TrackedItem {
     private TrackedItemTypes mTrackerType = TrackedItemTypes.UNKNOWN;
     private boolean mPing = false;
 
-    private File mHistoryFileDirectory;
+    private File mSaveFile = null;
+    private File mHistoryFileDirectory = null;
 
     private int mCurrentHistoryFileID = 1;
-    private ArrayList<String> mHistoryFiles = new ArrayList<>();
+    private final ArrayList<String> mHistoryFiles = new ArrayList<>();
     private ArrayList<Location> mCurrentHistory = new ArrayList<>();
     private File mCurrentHistoryFile;
-    private ArrayList<Location> mRecentHistory = new ArrayList<>();
+    private final ArrayList<Location> mRecentHistory = new ArrayList<>();
     private boolean mHistoryChanged = false;
 
     private TrackedItemButton mButton = null;
@@ -105,11 +100,15 @@ public class TrackedItem {
      * Construct a TrackedItem object from a file.
      *
      * @param file a File object specifying the file to load.
-     * @throws FileNotFoundException
+     * @throws FileNotFoundException Exception if the file does not exist.
      */
-    TrackedItem(File file) throws FileNotFoundException, IOException {
+    TrackedItem(File file) throws IOException {
         String line, name, value;
         int idx;
+
+        mSaveFile = file;
+
+        //mActivity = activity;
 
         Log.d(TAG, String.format("Loading TrackedItem from %s", file.getAbsolutePath()));
 
@@ -171,7 +170,6 @@ public class TrackedItem {
                             Log.w(TAG, String.format("Unknown tracker type read from %s: %s", file.getAbsolutePath(), line));
                             mTrackerType = TrackedItemTypes.UNKNOWN;
                         }
-                        ;
                         break;
 
                     case TI_PING:
@@ -194,15 +192,19 @@ public class TrackedItem {
         }
     }
 
-    public void saveToFile(File file) {
-        Log.d(TAG, String.format("Saving TrackedItem %s (%d) to %s", mName, mID, file.getAbsolutePath()));
+    void saveToFile() {
+        if (mSaveFile == null) {
+            mSaveFile = new File(TrackedItems.getTrackedItemsSaveDir(), String.format(Locale.getDefault(), "%s.%d", TrackedItems.TRACKED_ITEM_FILE_PREFIX, mID));
+        }
+
+        Log.d(TAG, String.format("Saving TrackedItem %s (%d) to %s", mName, mID, mSaveFile.getAbsolutePath()));
 
         try {
-            if (file.exists()) {
-                file.delete();
+            if (mSaveFile.exists()) {
+                mSaveFile.delete();
             }
 
-            BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(mSaveFile));
 
             writer.write(TI_ID + ":" + mID);
             writer.newLine();
@@ -244,7 +246,7 @@ public class TrackedItem {
             Log.v(TAG, String.format("Saved data for %s : %s", file.getAbsolutePath(), t));*/
         }
         catch (IOException io) {
-            Log.e(TAG, String.format("IOException writing file %s - %s", file.getAbsolutePath(), io.toString()));
+            Log.e(TAG, String.format("IOException writing file %s - %s", mSaveFile.getAbsolutePath(), io.toString()));
         }
     }
 
@@ -253,9 +255,9 @@ public class TrackedItem {
         return mEnabled;
     }
 
-    TrackedItemButton getButton() {
+    TrackedItemButton getButton(Activity activity) {
         if (mButton == null) {
-            mButton = new TrackedItemButton(this);
+            mButton = new TrackedItemButton(activity, this);
         }
         else {
             mButton.setButtonAppearance();
@@ -311,7 +313,7 @@ public class TrackedItem {
         }
     }
 
-    void refreshMapMarkerInfoWindow() {
+    private void refreshMapMarkerInfoWindow() {
         if (mMapMarker.isInfoWindowShown()) {
             mMapMarker.hideInfoWindow();
             mMapMarker.showInfoWindow();
@@ -341,7 +343,7 @@ public class TrackedItem {
         }
     }
 
-    void setPingingButtonState(boolean on) {
+    private void setPingingButtonState(boolean on) {
         if (mButton != null) {
             mButton.setPingingImage(on);
         }
@@ -494,7 +496,7 @@ public class TrackedItem {
         return mNumberOfResponsesReceived;
     }
 
-    public void setNumberOfResponsesRecevied(int responses) {
+    public void setNumberOfResponsesReceived(int responses) {
         mNumberOfResponsesReceived = responses;
     }
 
@@ -507,20 +509,16 @@ public class TrackedItem {
     }
 //endregion
 
-    public void sendPing() {
-        //switch(mTrackerType) {
-            //case TK103A:
-                SMSSender sender = new SMSSender();
-                sender.sendPingMessage(this);
-
-        setPingingButtonState(true);
-                //break;
-        //}
+    public void sendPing(Activity activity) {
+        SMSSender sender = new SMSSender();
+        sender.sendPingMessage(activity, this);
     }
 
     public void pingSent() {
         mSentPingRequest = true;
         mNumberOfResponsesReceived = 0;
+
+        setPingingButtonState(true);
 
         //TODO: Set up alarm to resend the ping after specified time.
     }
@@ -529,7 +527,7 @@ public class TrackedItem {
         setPingingButtonState(false);
     }
 
-    public void messageReceived(String message) {
+    public void messageReceived(Context context, String message) {
         /*
         Response from TK103A may be one of two message formats, depending on whether the device
         has got GPS service:-
@@ -586,14 +584,14 @@ public class TrackedItem {
         }
 
         if (found) {
-            newLocationReceived(new Location(lat, lng, gps));
+            newLocationReceived(context, new Location(lat, lng, gps));
         }
         //switch(mTrackerType) {
 //            case TK103A:
 //        }
     }
 
-    public void newLocationReceived(Location loc) {
+    private void newLocationReceived(Context context, Location loc) {
         Log.d(TAG, String.format("New location for %s - %s", mName, loc.toString()));
 
         addLocationToHistory(loc);
@@ -603,7 +601,15 @@ public class TrackedItem {
             setPingingButtonState(false);
         }
 
-        ((ITrackedItemActions)TrackedItems.AppActivity).trackedItemLocationUpdate(this, loc);
+        LocalBroadcastManager lbm = LocalBroadcastManager.getInstance(context);
+        Intent event = new Intent("TRACKER-EVENT");
+        event.putExtra("EVENT", "TRACKED-ITEM-LOCATION-UPDATE");
+        event.putExtra("TRACKED-ITEM", mID);
+        event.putExtra("LOCATION", loc.toString());
+        lbm.sendBroadcast(event);
+        //if (mActivity instanceof ITrackedItemActions) {
+            //((ITrackedItemActions) mActivity).trackedItemLocationUpdate(this, loc);
+        //}
     }
 
     private void addLocationToHistory(Location loc) {
@@ -622,7 +628,7 @@ public class TrackedItem {
 
             // Start a new history file.
             mCurrentHistoryFileID++;
-            mCurrentHistoryFile = new File(getHistoryDir(), String.valueOf(mCurrentHistoryFileID));
+            mCurrentHistoryFile = new File(mHistoryFileDirectory, String.valueOf(mCurrentHistoryFileID));
 
             // Create the file now, so that if we restart we know this is the last history file,
             // although it will be empty initially.
@@ -703,20 +709,20 @@ public class TrackedItem {
     }
 
     private ArrayList<Location> loadHistoryFile(File file) {
-        ArrayList<Location> locs = new ArrayList<>();
+        ArrayList<Location> locations = new ArrayList<>();
 
-        loadHistoryFile(file, locs);
+        loadHistoryFile(file, locations);
 
-        return locs;
+        return locations;
     }
 
-    private void loadHistoryFile(File file, ArrayList<Location> locs) {
+    private void loadHistoryFile(File file, ArrayList<Location> locations) {
         String line;
-        Location loc;
+        Location location;
 
         Log.d(TAG, String.format("Loading history from %s", file.getAbsolutePath()));
 
-        locs.clear();
+        locations.clear();
 
         try {
             BufferedReader reader = new BufferedReader(new FileReader(file));
@@ -724,10 +730,10 @@ public class TrackedItem {
             line = reader.readLine();
             while (line != null) {
                 try {
-                    loc = new Location(line);
-                    locs.add(loc);
+                    location = new Location(line);
+                    locations.add(location);
 
-                    Log.d(TAG, String.format("+++ %s", loc.toString()));
+                    Log.d(TAG, String.format("+++ %s", location.toString()));
                 }
                 catch(ParseException pe) {
                     Log.e(TAG, String.format("Exception parsing location history entry from %s - %s: %s", file.getAbsolutePath(), line, pe.toString()));
@@ -769,12 +775,22 @@ public class TrackedItem {
             writer.close();
         }
         catch(IOException io) {
-            Log.e(TAG, String.format("IOExcepotion writing location history to %s - %s", file.getAbsoluteFile(), io.toString()));
+            Log.e(TAG, String.format("IOException writing location history to %s - %s", file.getAbsoluteFile(), io.toString()));
         }
     }
 
+    void deleteHistory() {
+        for (File file : mHistoryFileDirectory.listFiles()) {
+            Log.d(TAG, String.format("Deleting history file %s", file.getAbsoluteFile()));
+            file.delete();
+        }
+
+        Log.d(TAG, String.format("Deleting history directory %s", mHistoryFileDirectory.getAbsoluteFile()));
+        mHistoryFileDirectory.delete();
+    }
+
     private File getHistoryDir() {
-        File dir = new File(TrackedItems.AppActivity.getDir(HISTORY_DIR, 0), String.valueOf(mID));
+        File dir = new File(TrackedItems.getTrackedItemsHistoryDir(), String.valueOf(mID));
 
         if (!dir.exists()) {
             dir.mkdirs();

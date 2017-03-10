@@ -5,12 +5,8 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
-/**
- * Created by Marc on 02/03/2017.
- */
-
-public class TrackedItemButtonHelper {
-    private static Context mContext;
+class TrackedItemButtonHelper {
+    //private static Context mContext;
 
     private static Bitmap mFollowingOn;
     private static Bitmap mFollowingOff;
@@ -21,7 +17,7 @@ public class TrackedItemButtonHelper {
     private static Bitmap mMyLocationOff;
 
     public static void initialise(Context context) {
-        mContext = context;
+        //mContext = context;
 
         Resources res = context.getResources();
 

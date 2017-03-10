@@ -3,8 +3,8 @@ package me.marcsymonds.tracker;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
@@ -14,7 +14,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
-import com.google.android.gms.auth.api.signin.GoogleSignInOptionsExtension;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -32,6 +31,8 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
+import java.util.Locale;
+
 /**
  *
  */
@@ -48,7 +49,6 @@ public class MapFragment
 
     private GoogleMap mMap = null;
     private GoogleApiClient mGoogleApiClient = null;
-    private LocationRequest mLocationRequest = null;
 
     public MapFragment() {
         // Required empty public constructor
@@ -61,11 +61,7 @@ public class MapFragment
      * @return A new instance of fragment MapFragment.
      */
     public static MapFragment newInstance() {
-        MapFragment fragment = new MapFragment();
-        //Bundle args = new Bundle();
-        //fragment.setArguments(args);
-
-        return fragment;
+        return new MapFragment();
     }
 
     @Override
@@ -82,18 +78,18 @@ public class MapFragment
 
     public void onConnected(Bundle bundle) {
         try {
-            android.location.Location mCurrentLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+            //android.location.Location mCurrentLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
             // Note that this can be NULL if last location isn't already known.
-            if (mCurrentLocation != null) {
+            //if (mCurrentLocation != null) {
                 // Print current location if not null
-                Log.d(TAG, "current location: " + mCurrentLocation.toString());
-                LatLng latLng = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
-            }
+                //Log.d(TAG, "current location: " + mCurrentLocation.toString());
+                //LatLng latLng = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
+            //}
             // Begin polling for new location updates.
             startLocationUpdates();
         }
         catch(SecurityException se) {
-
+            Log.e(TAG, String.format("Security exception getting last location - %s", se.toString()));
         }
     }
 
@@ -107,13 +103,13 @@ public class MapFragment
             msg = "Network lost. Please re-connect.";
         }
         else {
-            msg = String.format("Connection lost (%d)", cause);
+            msg = String.format(Locale.getDefault(), "Connection lost (%d)", cause);
         }
 
         Toast.makeText(this.getActivity(), msg, Toast.LENGTH_SHORT).show();
     }
 
-    public void onConnectionFailed(ConnectionResult connectionResult) {
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
         Toast.makeText(this.getActivity(), String.format("Google API connection failed: %s", connectionResult.getErrorMessage()), Toast.LENGTH_SHORT).show();
     }
 
@@ -135,18 +131,18 @@ public class MapFragment
     }
 
     // Trigger new location updates at interval
-    protected void startLocationUpdates() {
+    private void startLocationUpdates() {
         // Create the location request
-        mLocationRequest = LocationRequest.create()
+        LocationRequest locationRequest = LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                 .setInterval(10000)
                 .setFastestInterval(5000);
         // Request location updates
         try {
-            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
+            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, locationRequest, this);
         }
         catch (SecurityException se) {
-
+            Log.e(TAG, String.format("Security exception requesting location updates - %s", se.toString()));
         }
     }
 
@@ -166,13 +162,16 @@ public class MapFragment
     }
 
     public void centerMap(Location loc) {
+        centerMap(loc, -1);
+    }
+
+    public void centerMap(Location loc, float zoom) {
         if (loc != null) {
             LatLng latLng = loc.getLatLng();
 
             CameraPosition.Builder cpb = CameraPosition.builder();
             cpb.target(latLng);
-            cpb.zoom(mMap.getCameraPosition().zoom);
-            //cpb.zoom(15);
+            cpb.zoom(zoom >= 0 ? zoom : mMap.getCameraPosition().zoom);
 
             CameraUpdate cu = CameraUpdateFactory.newCameraPosition(cpb.build());
 
@@ -266,7 +265,7 @@ public class MapFragment
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
         if (requestCode == Tracker.PERMISSION_REQUEST.LOCATION.getValue()) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 try {

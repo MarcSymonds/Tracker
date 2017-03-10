@@ -8,19 +8,21 @@ import android.content.IntentFilter;
 import android.telephony.SmsManager;
 import android.widget.Toast;
 
+import java.util.Locale;
+
 /**
  * This class is used to receive messages from the SMS service once it has sent an SMS to a tracker
  * device. This is just looking for success/failure of the SMS being sent, it is not looking for
  * and response from the tracker. That is dealt with by TODO: other class.
  */
-public class SMSSenderReceiver {
+class SMSSenderReceiver {
     private static final String TAG = "SMSSenderReceiver";
 
-    private static Activity mActivity;
+    //private static Activity mActivity;
     private static BroadcastReceiver mBroadcastReceiver;
 
-    public static void setupBroadcastReceiver(Activity activity) {
-        mActivity = activity;
+    static void setupBroadcastReceiver(final Activity activity) {
+        //mActivity = activity;
 
         // Filter for messages to receive.
         IntentFilter filt = new IntentFilter(SMSSender.INTENT_SMS_SENT);
@@ -28,13 +30,16 @@ public class SMSSenderReceiver {
         mBroadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                String msg = "";
+                String msg;
                 int trackedItemID = intent.getIntExtra("TrackedItemID", 0);
                 TrackedItem trackedItem = TrackedItems.getItemByID(trackedItemID);
 
                 if (getResultCode() == Activity.RESULT_OK) {
                     msg = "SMS sent";
-                    trackedItem.pingSent();
+
+                    if (trackedItem != null) {
+                        trackedItem.pingSent();
+                    }
                 }
                 else {
                     switch (getResultCode()) {
@@ -55,23 +60,25 @@ public class SMSSenderReceiver {
                             break;
 
                         default:
-                            msg = String.format("Unknown SMS result: %d", getResultCode());
+                            msg = String.format(Locale.getDefault(), "Unknown SMS result: %d", getResultCode());
                             break;
                     }
 
-                    trackedItem.pingFailed(getResultCode(), msg);
+                    if (trackedItem != null) {
+                        trackedItem.pingFailed(getResultCode(), msg);
+                    }
                 }
 
-                Toast.makeText(mActivity.getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
+                Toast.makeText(activity.getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
             }
         };
 
-        mActivity.registerReceiver(mBroadcastReceiver, filt);
+        activity.registerReceiver(mBroadcastReceiver, filt);
     }
 
-    public static void tearDown() {
-        mActivity.unregisterReceiver(mBroadcastReceiver);
+    public static void tearDown(Activity activity) {
+        activity.unregisterReceiver(mBroadcastReceiver);
         mBroadcastReceiver = null;
-        mActivity = null;
+        //activity = null;
     }
 }

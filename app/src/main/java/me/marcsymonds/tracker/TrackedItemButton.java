@@ -1,41 +1,34 @@
 package me.marcsymonds.tracker;
 
+import android.app.Activity;
 import android.content.res.ColorStateList;
-import android.content.res.XmlResourceParser;
 import android.graphics.Color;
-import android.net.Uri;
 import android.os.Build;
-import android.support.annotation.XmlRes;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 
-import org.xmlpull.v1.XmlPullParserException;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-
 import static android.os.Build.VERSION.SDK_INT;
 
-public class TrackedItemButton implements Button.OnClickListener, Button.OnLongClickListener {
+class TrackedItemButton implements Button.OnClickListener, Button.OnLongClickListener {
     private static final String TAG = "TrackedItemButton";
 
-    private TrackedItem mTrackedItem;
+    private final Activity mActivity;
 
-    private View mButtonContainerView;
-    private Button mButtonView;
-    private ImageView mFollowingImage;
-    private ImageView mPingingImage;
+    private final TrackedItem mTrackedItem;
 
-    TrackedItemButton(TrackedItem trackedItem) {
-        int itemColour;
+    private final View mButtonContainerView;
+    private final Button mButtonView;
+    private final ImageView mFollowingImage;
+    private final ImageView mPingingImage;
 
+    TrackedItemButton(Activity activity, TrackedItem trackedItem) {
+        mActivity = activity;
         mTrackedItem = trackedItem;
 
-        LayoutInflater inflater = LayoutInflater.from(TrackedItems.AppActivity);
+        LayoutInflater inflater = LayoutInflater.from(mActivity);
         mButtonContainerView = inflater.inflate(R.layout.tracked_item_button, null);
 
         mButtonView = (Button)mButtonContainerView.findViewById(R.id.butTrackedItem);
@@ -138,9 +131,8 @@ public class TrackedItemButton implements Button.OnClickListener, Button.OnLongC
 
     @Override
     public boolean onLongClick(View view) {
-        //TODO: Start pinging device.
-        if (TrackedItems.AppActivity instanceof ITrackedItemActions) {
-            ((ITrackedItemActions) TrackedItems.AppActivity).trackedItemButtonClick(mTrackedItem, true);
+        if (mActivity instanceof ITrackedItemActions) {
+            ((ITrackedItemActions) mActivity).trackedItemButtonClick(mTrackedItem, true);
         }
         else {
             Log.e(TAG, "AppActivity not instance of ITrackedItemActions");
@@ -150,9 +142,8 @@ public class TrackedItemButton implements Button.OnClickListener, Button.OnLongC
 
     @Override
     public void onClick(View view) {
-        //TODO: Start following device location.
-        if (TrackedItems.AppActivity instanceof ITrackedItemActions) {
-            ((ITrackedItemActions) TrackedItems.AppActivity).trackedItemButtonClick(mTrackedItem, false);
+        if (mActivity instanceof ITrackedItemActions) {
+            ((ITrackedItemActions) mActivity).trackedItemButtonClick(mTrackedItem, false);
         }
     }
 }

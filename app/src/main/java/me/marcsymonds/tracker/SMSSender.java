@@ -13,33 +13,33 @@ import android.widget.Toast;
 
 import java.util.Locale;
 
-public class SMSSender {
+class SMSSender {
     private static final String TAG = "SMSSender";
 
     // Intent action that will be passed to the SMS sender, who will then send it back once the
     // SMS message has been sent.
     static final String INTENT_SMS_SENT = "SMS_SENT";
 
-    private static Activity mActivity;
+    //private static Activity mActivity;
 
-    public static void setActivity(Activity activity) {
-        mActivity = activity;
+    static void setActivity() {//Activity activity) {
+        //mActivity = activity;
     }
 
-    public static void tearDown() {
-        mActivity = null;
+    static void tearDown() {
+        //mActivity = null;
     }
 
-    public void sendPingMessage(TrackedItem trackedItem) {
+    void sendPingMessage(Activity activity, TrackedItem trackedItem) {
         // Do we already have permission to send SMS messages>
-        if (ActivityCompat.checkSelfPermission(mActivity, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED) {
-            checkTrackedItem(trackedItem);
+        if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED) {
+            checkTrackedItem(activity, trackedItem);
         }
         // No. Have we been denied permission previously?
-        else if (ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.SEND_SMS)) {
+        else if (ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.SEND_SMS)) {
             // Yes. Tell the user to enable SMS permissions.
             Toast.makeText(
-                    mActivity.getApplicationContext(),
+                    activity.getApplicationContext(),
                     "Insufficient permission to send SMS message. Enable 'SMS' permission for application.",
                     Toast.LENGTH_LONG)
                     .show();
@@ -49,38 +49,34 @@ public class SMSSender {
             // Use first 4 bits of request ID as the request ID, and put the ID of the object
             // to be acted on in the upper bits.
             ActivityCompat.requestPermissions(
-                    mActivity,
+                    activity,
                     new String[]{Manifest.permission.SEND_SMS},
                     Tracker.PERMISSION_REQUEST.SEND_SMS.getValue() + (trackedItem.getID() << 4));
         }
     }
 
-    private void checkTrackedItem(final TrackedItem trackedItem) {
-        boolean cont = true;
-
+    private void checkTrackedItem(final Activity activity, final TrackedItem trackedItem) {
         if (!trackedItem.isEnabled()) {
             Toast.makeText(
-                    mActivity.getApplicationContext(),
+                    activity.getApplicationContext(),
                     String.format("%s is disabled.", trackedItem.getName()),
                     Toast.LENGTH_LONG)
                     .show();
-
-            cont = false;
         } else if (trackedItem.getTelephoneNumber().length() == 0) {
             Toast.makeText(
-                    mActivity.getApplicationContext(),
+                    activity.getApplicationContext(),
                     String.format("Telephone number not set for %s", trackedItem.getName()),
                     Toast.LENGTH_LONG)
                     .show();
         } else {
             int awaiting = trackedItem.getNumberOfResponses() - trackedItem.getNumberOfResponsesReceived();
             if (trackedItem.getSentPingRequest() && awaiting > 0) {
-                new AlertDialog.Builder(mActivity)
+                new AlertDialog.Builder(activity)
                         .setTitle("Awaiting Responses")
                         .setMessage(String.format(Locale.getDefault(), "Still awaiting %d response(s). Are you sure you want to send another request?", awaiting))
                         .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int which) {
-                                doSendPingMessage(trackedItem);
+                                doSendPingMessage(activity, trackedItem);
                             }
                         })
                         .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
@@ -92,23 +88,23 @@ public class SMSSender {
                         .show();
             }
             else {
-                doSendPingMessage(trackedItem);
+                doSendPingMessage(activity, trackedItem);
             }
         }
     }
 
-    private void doSendPingMessage(TrackedItem trackedItem) {
+    private void doSendPingMessage(Activity activity, TrackedItem trackedItem) {
         SmsManager smsManager = SmsManager.getDefault();
 
         Toast.makeText(
-                mActivity.getApplicationContext(),
+                activity.getApplicationContext(),
                 String.format("Sending location request to %s", trackedItem.getName()),
                 Toast.LENGTH_SHORT)
                 .show();
 
         Intent intent = new Intent(INTENT_SMS_SENT);
         intent.putExtra("TrackedItemID", trackedItem.getID());
-        PendingIntent sentPending = PendingIntent.getBroadcast(mActivity.getApplicationContext(), 1, intent, PendingIntent.FLAG_ONE_SHOT);
+        PendingIntent sentPending = PendingIntent.getBroadcast(activity.getApplicationContext(), 1, intent, PendingIntent.FLAG_ONE_SHOT);
 
         smsManager.sendTextMessage(
                 trackedItem.getTelephoneNumber(),
@@ -118,5 +114,3 @@ public class SMSSender {
                 null);
     }
 }
-
-

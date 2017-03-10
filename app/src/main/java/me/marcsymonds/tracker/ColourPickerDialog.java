@@ -1,26 +1,18 @@
 package me.marcsymonds.tracker;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.Context;
-import android.content.ContextWrapper;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.support.annotation.ArrayRes;
-import android.support.annotation.ColorInt;
-import android.support.annotation.NonNull;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.Window;
 import android.widget.GridLayout;
-
-/**
- * Created by Marc on 20/02/2017.
- */
 
 public class ColourPickerDialog extends DialogFragment {
     private final String TAG = "ColourPickerDialog";
@@ -33,7 +25,7 @@ public class ColourPickerDialog extends DialogFragment {
     private GridLayout mColourGrid;
     private ColourPickerDialog.OnColourSelectedListener colourSelectedListener;
 
-    public interface OnColourSelectedListener {
+    interface OnColourSelectedListener {
         void onColourSelected(int colour, String tag);
     }
 
@@ -163,73 +155,76 @@ public class ColourPickerDialog extends DialogFragment {
 
         Log.d(TAG, String.format("Size for dialog: %d, %d", width, height));
 
-        dialog.getWindow().setLayout(width, height);
-    }
-
-    public static class Builder {
-        private int[] mColourChoices;
-        private Context context;
-        private int mSelectedColour;
-        private String tag;
-
-        public <ColorActivityType extends Activity & OnColourSelectedListener> Builder(@NonNull ColorActivityType context) {
-            this.context = context;
-            setColourChoices(R.array.preference_colour_picker_default_colours);
-        }
-
-        /*public Builder setNumColumns(int numColumns) {
-            this.numColumns = numColumns;
-            return this;
-        }*/
-
-        public Builder setColourChoices(@ArrayRes int colourChoicesRes) {
-            String[] choices = context.getResources().getStringArray(colourChoicesRes);
-
-            int[] colours = new int[choices.length];
-            for (int i = 0; i < choices.length; i++) {
-                colours[i] = Integer.parseInt(choices[i]);// ColourPickerUtils.hsv2rgb(Float.parseFloat(choices[i]), 1, 1);
-            }
-
-            mColourChoices = colours;
-            return this;
-        }
-
-        /*public Builder setColorShape(ColorShape colorShape) {
-            this.colorShape = colorShape;
-            return this;
-        }*/
-
-        public Builder setSelectedColour(@ColorInt int selectedColour) {
-            mSelectedColour = selectedColour;
-            return this;
-        }
-
-        public Builder setTag(String tag) {
-            this.tag = tag;
-            return this;
-        }
-
-        protected ColourPickerDialog build() {
-            ColourPickerDialog dialog = ColourPickerDialog.newInstance(mSelectedColour, mColourChoices);
-            dialog.setOnColourSelectedListener((OnColourSelectedListener) context);
-            return dialog;
-        }
-
-        public ColourPickerDialog show() {
-            ColourPickerDialog dialog = build();
-            dialog.show(resolveContext(context).getFragmentManager(), tag == null ? String.valueOf(System.currentTimeMillis()) : tag);
-            return dialog;
-        }
-
-        protected Activity resolveContext(Context context) {
-            if (context instanceof Activity) {
-                return (Activity) context;
-            } else if (context instanceof ContextWrapper) {
-                return resolveContext(((ContextWrapper) context).getBaseContext());
-            }
-            return null;
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setLayout(width, height);
         }
     }
+
+//    static class Builder {
+//        private int[] mColourChoices;
+//        private final Context context;
+//        private int mSelectedColour;
+//        private String tag;
+//
+//        public <ColorActivityType extends Activity & OnColourSelectedListener> Builder(@NonNull ColorActivityType context) {
+//            this.context = context;
+//            setColourChoices(R.array.preference_colour_picker_default_colours);
+//        }
+//
+//        /*public Builder setNumColumns(int numColumns) {
+//            this.numColumns = numColumns;
+//            return this;
+//        }*/
+//
+//        Builder setColourChoices(@ArrayRes int colourChoicesRes) {
+//            String[] choices = context.getResources().getStringArray(colourChoicesRes);
+//
+//            int[] colours = new int[choices.length];
+//            for (int i = 0; i < choices.length; i++) {
+//                colours[i] = Integer.parseInt(choices[i]);// ColourPickerUtils.hsv2rgb(Float.parseFloat(choices[i]), 1, 1);
+//            }
+//
+//            mColourChoices = colours;
+//            return this;
+//        }
+//
+//        /*public Builder setColorShape(ColorShape colorShape) {
+//            this.colorShape = colorShape;
+//            return this;
+//        }*/
+//
+//        public Builder setSelectedColour(@ColorInt int selectedColour) {
+//            mSelectedColour = selectedColour;
+//            return this;
+//        }
+//
+//        public Builder setTag(String tag) {
+//            this.tag = tag;
+//            return this;
+//        }
+//
+//        ColourPickerDialog build() {
+//            ColourPickerDialog dialog = ColourPickerDialog.newInstance(mSelectedColour, mColourChoices);
+//            dialog.setOnColourSelectedListener((OnColourSelectedListener) context);
+//            return dialog;
+//        }
+//
+//        public ColourPickerDialog show() {
+//            ColourPickerDialog dialog = build();
+//            dialog.show(resolveContext(context).getFragmentManager(), tag == null ? String.valueOf(System.currentTimeMillis()) : tag);
+//            return dialog;
+//        }
+//
+//        Activity resolveContext(Context context) {
+//            if (context instanceof Activity) {
+//                return (Activity) context;
+//            } else if (context instanceof ContextWrapper) {
+//                return resolveContext(((ContextWrapper) context).getBaseContext());
+//            }
+//            return null;
+//        }
+//    }
 }
 
 

@@ -2,20 +2,12 @@ package me.marcsymonds.tracker;
 
 import android.content.res.Resources;
 import android.graphics.Color;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
-import android.graphics.drawable.LayerDrawable;
-import android.util.Log;
 import android.util.TypedValue;
-import android.view.Gravity;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
-
-/**
- * Created by Kizito Nwose on 9/28/2016.
- */
 
 class ColourPickerUtils {
     private static final String TAG = "ColourPickerUtils";
@@ -68,10 +60,10 @@ class ColourPickerUtils {
      * to set the colour of the marker, so we need to ability to convert Hue to RGB for displaying
      * the colours.
      *
-     * @param h Hue (0 - 359).
-     * @param s Saturation (0 - 1).
-     * @param v Value (0 - 1).
-     * @return int (Colour).
+     * @ param h Hue (0 - 359).
+     * @ param s Saturation (0 - 1).
+     * @ param v Value (0 - 1).
+     * @ return int (Colour).
      */
     /*static int hsv2rgb(float h, float s, float v)
     {
@@ -135,7 +127,7 @@ class ColourPickerUtils {
 
     private static final int BRIGHTNESS_THRESHOLD = 150;
 
-    private static boolean isColorDark(int color) {
+    private static boolean isColourDark(int color) {
         return ((30 * Color.red(color) +
                 59 * Color.green(color) +
                 11 * Color.blue(color)) / 100) <= BRIGHTNESS_THRESHOLD;

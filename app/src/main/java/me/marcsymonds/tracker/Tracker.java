@@ -1,9 +1,13 @@
 package me.marcsymonds.tracker;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -19,11 +23,8 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.text.ParseException;
-import java.util.Set;
 
 public class Tracker extends AppCompatActivity implements IMapFragmentActions, ITrackedItemActions {
     private final String TAG = "Tracker";
@@ -33,7 +34,7 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
 
     private final String SAVE_ITEM_BEING_FOLLOWED = "IBF";
     private final String SAVE_MY_LOCATION = "MYLOC";
-    private final String SAVE_MAP_LATITIUDE = "MAPLAT";
+    private final String SAVE_MAP_LATITUDE = "MAPLAT";
     private final String SAVE_MAP_LONGITUDE = "MAPLONG";
     private final String SAVE_MAP_ZOOM = "MAPZOOM";
     private final String SAVE_MAP_BEARING = "MAPBEARING";
@@ -47,6 +48,8 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
     private ImageButton mButMyLocation = null;
     private int mItemBeingFollowed = IBF_NONE; // -1=None, 0=My Location, n=Tracked Item ID.
 
+    private boolean mInitialiseMapLocation = false;
+
     enum PERMISSION_REQUEST {
         UNKNOWN(0),
         LOCATION(1),
@@ -54,7 +57,7 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
         RECEIVE_SMS(3),
         READ_SMS(4);
 
-        private int mValue;
+        private final int mValue;
 
         PERMISSION_REQUEST(int value) {
             mValue = value;
@@ -79,7 +82,7 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
         UNKNOWN(0),
         MANAGE_TRACKED_ITEMS(1);
 
-        private int mValue;
+        private final int mValue;
 
         ACTIVITY_REQUEST(int value) {
             mValue = value;
@@ -100,7 +103,7 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
         TrackedItemButtonHelper.initialise(this);
         TrackedItems.initialise(this);
 
-        SMSSender.setActivity(this);
+        SMSSender.setActivity();
         SMSSenderReceiver.setupBroadcastReceiver(this);
         SMSReceiver.setupBroadcastReceiver(this);
 
@@ -128,12 +131,39 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
             Float f = savedInstanceState.getFloat(SAVE_MAP_BEARING, -1);
             if (f >= 0) {
                 mInitialCamera = new CameraPosition(
-                        new LatLng(savedInstanceState.getDouble(SAVE_MAP_LATITIUDE), savedInstanceState.getDouble(SAVE_MAP_LONGITUDE)),
+                        new LatLng(savedInstanceState.getDouble(SAVE_MAP_LATITUDE), savedInstanceState.getDouble(SAVE_MAP_LONGITUDE)),
                         savedInstanceState.getFloat(SAVE_MAP_ZOOM),
                         0,
                         f);
             }
         }
+
+        LocalBroadcastManager eventListener = LocalBroadcastManager.getInstance(this);
+        eventListener.registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String event;
+                String locationString = "";
+
+                Log.d(TAG, String.format("Event: %s - %s", context.toString(), intent.toString()));
+
+                event = intent.getStringExtra("EVENT");
+                switch(event) {
+                    case "TRACKED-ITEM-LOCATION-UPDATE":
+                        try {
+                            TrackedItem trackedItem = TrackedItems.getItemByID(intent.getIntExtra("TRACKED-ITEM", 0));
+                            locationString = intent.getStringExtra("LOCATION");
+                            Location loc = new Location(locationString);
+                            trackedItemLocationUpdate(trackedItem, loc);
+                        }
+                        catch (ParseException pe) {
+                            Log.e(TAG, String.format("Exception parsing Location %s - %s", locationString, pe.toString()));
+                        }
+                        break;
+                }
+            }
+        },
+        new IntentFilter("TRACKER-EVENT"));
 
         setContentView(R.layout.activity_tracker);
 
@@ -183,7 +213,7 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
 
             outState.putFloat(SAVE_MAP_BEARING, cam.bearing);
             outState.putFloat(SAVE_MAP_ZOOM, cam.zoom);
-            outState.putDouble(SAVE_MAP_LATITIUDE, cam.target.latitude);
+            outState.putDouble(SAVE_MAP_LATITUDE, cam.target.latitude);
             outState.putDouble(SAVE_MAP_LONGITUDE, cam.target.longitude);
         }
     }
@@ -209,9 +239,9 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        SMSReceiver.teadDown();
+        SMSReceiver.tearDown(this);
         SMSSender.tearDown();
-        SMSSenderReceiver.tearDown();
+        SMSSenderReceiver.tearDown(this);
     }
 
     @Override
@@ -283,7 +313,7 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
             }
         }
 
-        if (mItemBeingFollowed == IBF_MY_LOCATION) {
+        if (mItemBeingFollowed == IBF_MY_LOCATION && mMyLastLocation != null) {
             initialCameraLocation = mMyLastLocation;
             Log.d(TAG, String.format("Last position of my location: %s", mMyLastLocation.toString()));
         }
@@ -301,27 +331,34 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
             CameraUpdate cu = CameraUpdateFactory.newCameraPosition(mInitialCamera);
             mMap.moveCamera(cu);
         }
+        else {
+            mInitialiseMapLocation = true; // When we get the first location message, move the map to that location.
+        }
     }
 
     @Override
     public void updateMyLocation(Location location) {
         mMyLastLocation = location;
 
-        if (mItemBeingFollowed == IBF_MY_LOCATION) {
-            mMapFragment.centerMap(location);
+        if (mItemBeingFollowed == IBF_MY_LOCATION || mInitialiseMapLocation) {
+            mMapFragment.centerMap(location, mInitialiseMapLocation ? 16 : -1);
+            mInitialiseMapLocation = false;
         }
     }
 
     public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
         // Extract the ID of the object to be acted on from the request ID.
         int id = requestCode >> 4;
+        TrackedItem trackedItem;
         requestCode &= 7;
 
         switch (Tracker.PERMISSION_REQUEST.valueOf(requestCode)) {
             case SEND_SMS:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    TrackedItems.getItemByID(id).sendPing();
-                    //mSMSSender.sendPingMessage(TrackedItems.getItemByID(id));
+                    trackedItem = TrackedItems.getItemByID(id);
+                    if (trackedItem != null) {
+                        trackedItem.sendPing(this);
+                    }
                 }
                 else {
                     Toast.makeText(getApplicationContext(), "Failed to acquire permission to send SMS message.", Toast.LENGTH_LONG).show();
@@ -347,7 +384,7 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
 
         for (TrackedItem ti : TrackedItems.getTrackedItemsList()) {
             if (ti.isEnabled()) {
-                View buttonView = ti.getButton().getButtonView();
+                View buttonView = ti.getButton(this).getButtonView();
                 container.addView(buttonView);
 
             }
@@ -381,15 +418,14 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
     @Override
     public void trackedItemButtonClick(TrackedItem trackedItem, boolean longClick) {
         if (longClick) {
-            trackedItem.sendPing();
+            trackedItem.sendPing(this);
         }
         else {
             setItemBeingFollowed(trackedItem.getID());
         }
     }
 
-    @Override
-    public void trackedItemLocationUpdate(TrackedItem trackedItem, Location location) {
+    private void trackedItemLocationUpdate(TrackedItem trackedItem, Location location) {
         Log.d(TAG, String.format("Tracked item location changed - %s (%d/%d): %s", trackedItem.getName(), trackedItem.getID(), mItemBeingFollowed, location.toString()));
 
         if (trackedItem.hasMapMarker()) {
@@ -413,7 +449,9 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
         }
         else if (mItemBeingFollowed > 0) {
             trackedItem = TrackedItems.getItemByID(mItemBeingFollowed);
-            trackedItem.setFollowingButtonState(false);
+            if (trackedItem != null) {
+                trackedItem.setFollowingButtonState(false);
+            }
         }
 
         if (mItemBeingFollowed == itemBeingFollowed) {
@@ -428,8 +466,10 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
             }
             else if (mItemBeingFollowed > 0) {
                 trackedItem = TrackedItems.getItemByID(mItemBeingFollowed);
-                trackedItem.setFollowingButtonState(true);
-                mMapFragment.centerMap(trackedItem.getLastLocation());
+                if (trackedItem != null) {
+                    trackedItem.setFollowingButtonState(true);
+                    mMapFragment.centerMap(trackedItem.getLastLocation());
+                }
             }
         }
     }
