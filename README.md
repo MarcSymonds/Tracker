@@ -11,3 +11,8 @@ The purpose of this application is to allow you to send the request to the devic
 
 ![](docs/Tracker-Map-sm.png?raw=true "Tracker Map Screen") 
 ![](docs/Tracked-Item-Details-sm.png?raw=true "Tracked Item Details")
+
+Pressing one of the buttons above the map will center the map on the last known location of that device. The first button is your current location.
+
+Long pressing one of the tracker buttons will send the location request command to the device. When the response is received, the position of the marker for that tracker will be updated with the new location.
+
