@@ -26,11 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class TrackedItem {
-    final private String TAG = "TrackedItem";
-
-    final static private int MAX_HISTORY_FILES = 10;
-    final static private int MAX_HISTORY_ENTRIES_PER_FILE = 3; // TODO: set proper value
-    final static private int MAX_RECENT_HISTORY = 10;
+    final static private String TAG = "TrackedItem";
 
     // These values must match the android:key values in the pref_tracked_item_entry.xml file.
     // These values are also used when saving the record to file.
@@ -75,14 +71,9 @@ public class TrackedItem {
     private boolean mPing = false;
 
     private File mSaveFile = null;
-    private File mHistoryFileDirectory = null;
 
-    private int mCurrentHistoryFileID = 1;
-    private final ArrayList<String> mHistoryFiles = new ArrayList<>();
-    private ArrayList<Location> mCurrentHistory = new ArrayList<>();
-    private File mCurrentHistoryFile;
-    private final ArrayList<Location> mRecentHistory = new ArrayList<>();
-    private boolean mHistoryChanged = false;
+    private File mHistoryDirectory;
+    private HistoryManager mHistory;
 
     private TrackedItemButton mButton = null;
     private Marker mMapMarker = null;
@@ -93,7 +84,8 @@ public class TrackedItem {
     private int mNumberOfResponsesReceived = 0;
 
     TrackedItem() {
-        // Will need to assign ID.
+        mID = TrackedItems.getNextID();
+        setHistory();
     }
 
     /**
@@ -107,8 +99,6 @@ public class TrackedItem {
         int idx;
 
         mSaveFile = file;
-
-        //mActivity = activity;
 
         Log.d(TAG, String.format("Loading TrackedItem from %s", file.getAbsolutePath()));
 
@@ -124,7 +114,7 @@ public class TrackedItem {
                 switch (name) {
                     case TI_ID:
                         // Use setID because it will set the history directory.
-                        setID(Integer.parseInt(value));
+                        mID = Integer.parseInt(value);
                         break;
 
                     case TI_NAME:
@@ -185,11 +175,18 @@ public class TrackedItem {
             }
 
             reader.close();
+
+            setHistory();
         }
         catch (IOException ex) {
             Log.e(TAG, String.format("IOException reading file %s - %s", file.getAbsolutePath(), ex.toString()));
             throw ex;
         }
+    }
+
+    private void setHistory() {
+        mHistoryDirectory = new File(TrackedItems.getTrackedItemsHistoryDir(), String.valueOf(mID));
+        mHistory = new HistoryManager(mHistoryDirectory);
     }
 
     void saveToFile() {
@@ -250,7 +247,6 @@ public class TrackedItem {
         }
     }
 
-
     public boolean isEnabled() {
         return mEnabled;
     }
@@ -266,9 +262,13 @@ public class TrackedItem {
         return mButton;
     }
 
+    HistoryManager getHistory() {
+        return mHistory;
+    }
+
     Location getLastLocation() {
-        if (mRecentHistory.size() > 0) {
-            return mRecentHistory.get(mRecentHistory.size() - 1);
+        if (mHistory != null) {
+            return mHistory.getLastLocation();
         }
         else {
             return null;
@@ -354,10 +354,10 @@ public class TrackedItem {
         return mID;
     }
 
-    void setID(int id) {
-        mID = id;
-        mHistoryFileDirectory = getHistoryDir();
-    }
+    //void setID(int id) {
+        //mID = id;
+        //setHistory();
+    //}
 
     void setEnabled(boolean enabled) {
         mEnabled = enabled;
@@ -591,10 +591,10 @@ public class TrackedItem {
 //        }
     }
 
-    private void newLocationReceived(Context context, Location loc) {
-        Log.d(TAG, String.format("New location for %s - %s", mName, loc.toString()));
+    private void newLocationReceived(Context context, Location location) {
+        Log.d(TAG, String.format("New location for %s - %s", mName, location.toString()));
 
-        addLocationToHistory(loc);
+        mHistory.recordLocation(location);
 
         ++mNumberOfResponsesReceived;
         if (mNumberOfResponsesReceived >= mNumberOfResponses) {
@@ -605,198 +605,19 @@ public class TrackedItem {
         Intent event = new Intent("TRACKER-EVENT");
         event.putExtra("EVENT", "TRACKED-ITEM-LOCATION-UPDATE");
         event.putExtra("TRACKED-ITEM", mID);
-        event.putExtra("LOCATION", loc.toString());
+        event.putExtra("LOCATION", location.toString());
         lbm.sendBroadcast(event);
-        //if (mActivity instanceof ITrackedItemActions) {
-            //((ITrackedItemActions) mActivity).trackedItemLocationUpdate(this, loc);
-        //}
-    }
-
-    private void addLocationToHistory(Location loc) {
-        mRecentHistory.add(loc);
-        while (mRecentHistory.size() > MAX_RECENT_HISTORY) {
-            mRecentHistory.remove(0);
-        }
-
-        mHistoryChanged = true;
-
-        mCurrentHistory.add(loc);
-        if (mCurrentHistory.size() >= MAX_HISTORY_ENTRIES_PER_FILE) {
-            // Save the current history.
-            saveHistoryFile(mCurrentHistory, mCurrentHistoryFile);
-            mCurrentHistory.clear();
-
-            // Start a new history file.
-            mCurrentHistoryFileID++;
-            mCurrentHistoryFile = new File(mHistoryFileDirectory, String.valueOf(mCurrentHistoryFileID));
-
-            // Create the file now, so that if we restart we know this is the last history file,
-            // although it will be empty initially.
-            try {
-                mCurrentHistoryFile.createNewFile();
-            }
-            catch(IOException io) {
-                Log.e(TAG, String.format("IOException creating new history file %s - %s", mCurrentHistoryFile.getAbsolutePath(), io.toString()));
-            }
-        }
-    }
-
-    //region HISTORY
-
-    /**
-     * Gets a list of the history files for the tracked item, and loads the history from the last
-     * history file.
-     */
-    void loadHistory() {
-        int histID;
-        int highID = 0;
-        int i;
-
-        Log.d(TAG, String.format("Loading history from directory %s", mHistoryFileDirectory.getAbsolutePath()));
-
-        // Get list of history files for this Tracked Item.
-        // History file names are just a number.
-
-        for (File file : mHistoryFileDirectory.listFiles()) {
-            histID = Integer.parseInt(file.getName());
-
-            // Could use .sort, but that requires later API.
-
-            if (mHistoryFiles.size() == 0 || histID > highID) {
-                mHistoryFiles.add(file.getName());
-                highID = histID;
-            }
-            else if (histID < Integer.parseInt(mHistoryFiles.get(0))) {
-                mHistoryFiles.add(0, file.getName());
-            }
-            else {
-                i = 0;
-                while (histID < Integer.parseInt(mHistoryFiles.get(i))) {
-                    ++i;
-                }
-                mHistoryFiles.add(i, file.getName());
-            }
-        }
-
-        Log.d(TAG, "History files:-");
-        for (String s : mHistoryFiles) {
-            Log.d(TAG, "+++ " + s);
-        }
-
-        mCurrentHistoryFileID = highID;
-
-        // If there are history files, then load the last one.
-        if (highID > 0) {
-            mCurrentHistoryFile = new File(mHistoryFileDirectory, mHistoryFiles.get(mHistoryFiles.size() - 1));
-            mCurrentHistory = loadHistoryFile(mCurrentHistoryFile);
-
-            if (mCurrentHistory.size() > 0) {
-                mRecentHistory.add(mCurrentHistory.get(mCurrentHistory.size() - 1));
-            }
-            else if (mHistoryFiles.size() > 1) {
-                File old = new File(mHistoryFileDirectory, mHistoryFiles.get(mHistoryFiles.size() - 2));
-                ArrayList<Location> oldHist = loadHistoryFile(old);
-                if (oldHist.size() > 0) {
-                    mRecentHistory.add(oldHist.get(oldHist.size() - 1));
-                }
-            }
-        }
-        else {
-            // Otherwise, set up for the first history file.
-            mCurrentHistoryFile = new File(mHistoryFileDirectory, "1");
-            mCurrentHistoryFileID = 1;
-        }
-    }
-
-    private ArrayList<Location> loadHistoryFile(File file) {
-        ArrayList<Location> locations = new ArrayList<>();
-
-        loadHistoryFile(file, locations);
-
-        return locations;
-    }
-
-    private void loadHistoryFile(File file, ArrayList<Location> locations) {
-        String line;
-        Location location;
-
-        Log.d(TAG, String.format("Loading history from %s", file.getAbsolutePath()));
-
-        locations.clear();
-
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(file));
-
-            line = reader.readLine();
-            while (line != null) {
-                try {
-                    location = new Location(line);
-                    locations.add(location);
-
-                    Log.d(TAG, String.format("+++ %s", location.toString()));
-                }
-                catch(ParseException pe) {
-                    Log.e(TAG, String.format("Exception parsing location history entry from %s - %s: %s", file.getAbsolutePath(), line, pe.toString()));
-                }
-                catch(IllegalArgumentException ia) {
-                    Log.e(TAG, ia.toString());
-                }
-                line = reader.readLine();
-            }
-
-            reader.close();
-        }
-        catch(IOException io) {
-            Log.e(TAG, String.format("IOException reading file %s - %s", file.getAbsolutePath(), io.toString()));
-        }
-    }
-
-    public void saveHistory() {
-        saveHistoryFile(mCurrentHistory, mCurrentHistoryFile);
-    }
-
-    private void saveHistoryFile(ArrayList<Location> locations, File file) {
-        Log.d(TAG, String.format("Saving history to file %s", file.getAbsolutePath()));
-
-        try {
-            if (file.exists()) {
-                file.delete();
-            }
-
-            BufferedWriter writer = new BufferedWriter(new FileWriter(file));
-
-            for (Location loc : locations) {
-                Log.d(TAG, String.format("+++ %s", loc.toString()));
-
-                writer.write(loc.toString());
-                writer.newLine();
-            }
-
-            writer.close();
-        }
-        catch(IOException io) {
-            Log.e(TAG, String.format("IOException writing location history to %s - %s", file.getAbsoluteFile(), io.toString()));
-        }
     }
 
     void deleteHistory() {
-        for (File file : mHistoryFileDirectory.listFiles()) {
-            Log.d(TAG, String.format("Deleting history file %s", file.getAbsoluteFile()));
-            file.delete();
+        if (mHistory != null) {
+            mHistory.deleteAllHistory();
         }
-
-        Log.d(TAG, String.format("Deleting history directory %s", mHistoryFileDirectory.getAbsoluteFile()));
-        mHistoryFileDirectory.delete();
     }
 
-    private File getHistoryDir() {
-        File dir = new File(TrackedItems.getTrackedItemsHistoryDir(), String.valueOf(mID));
-
-        if (!dir.exists()) {
-            dir.mkdirs();
+    void saveHistory() {
+        if (mHistory != null) {
+            mHistory.saveHistory();
         }
-
-        return dir;
     }
-    //endregion
 }
