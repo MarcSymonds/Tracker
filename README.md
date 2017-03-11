@@ -9,4 +9,5 @@ To actually see the location on a map, the response does also contain a link to 
 
 The purpose of this application is to allow you to send the request to the device, and when the response is received it will automatically indicate on the map the location.
 
-![](docs/Tracker-Map-sm.png?raw=true "Tracker Map Screen")
+![](docs/Tracker-Map-sm.png?raw=true "Tracker Map Screen") 
+![](docs/Tracked-Item-Detail-sm.png?raw=true "Tracked Item Detail")
