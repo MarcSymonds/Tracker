@@ -84,10 +84,9 @@
             android:defaultValue="false"
             android:title="@string/auto_resend_ping_cmd"
             android:key="tracked_item_auto_ping"
-            android:switchTextOff="@string/tracked_item_auto_ping_off"
-            android:switchTextOn="@string/tracked_item_auto_ping_on"
             android:summaryOff="@string/tracked_item_auto_ping_off"
             android:summaryOn="@string/tracked_item_auto_ping_on" />
+
         <EditTextPreference
             android:defaultValue="60"
             android:selectAllOnFocus="true"
