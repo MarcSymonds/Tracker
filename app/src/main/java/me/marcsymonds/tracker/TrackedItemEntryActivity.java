@@ -16,13 +16,16 @@ import android.widget.ListAdapter;
 public class TrackedItemEntryActivity extends AppCompatPreferenceActivity {
     final private String TAG = "TrackerItemEntryAct";
 
+    // Name of the SharedPreferences file to use for editing a TrackedItem.
+    static final private String TRACKED_ITEM_ENTRY_PREFS = "TrackedItemPrefs";
+
     private int mTrackedItemID = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences sp = this.getSharedPreferences(TRACKED_ITEM_ENTRY_PREFS, MODE_PRIVATE);
 
         /*
         // Output all of the shared preferences.
@@ -124,7 +127,7 @@ public class TrackedItemEntryActivity extends AppCompatPreferenceActivity {
         }
 
         if (trackedItem != null) {
-            trackedItem.getFromSharedPreferences(PreferenceManager.getDefaultSharedPreferences(this));
+            trackedItem.getFromSharedPreferences(this.getApplicationContext().getSharedPreferences(TRACKED_ITEM_ENTRY_PREFS, MODE_PRIVATE));
             trackedItem.saveToFile();
 
             return trackedItem.getID();
@@ -163,10 +166,12 @@ public class TrackedItemEntryActivity extends AppCompatPreferenceActivity {
 
         // Trigger the listener immediately with the preference's
         // current value.
+
         sBindPreferenceSummaryToValueListener.onPreferenceChange(preference,
-                PreferenceManager
-                        .getDefaultSharedPreferences(preference.getContext())
-                        .getString(preference.getKey(), ""));
+                preference.getPreferenceManager().getSharedPreferences().getString(preference.getKey(), ""));
+                //PreferenceManager
+                        //.getDefaultSharedPreferences(preference.getContext())
+                        //.getString(preference.getKey(), ""));
     }
 
     public static class TrackedItemEntryFragment extends PreferenceFragment {
@@ -175,7 +180,13 @@ public class TrackedItemEntryActivity extends AppCompatPreferenceActivity {
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
+
+            // PreferenceFragment uses the default shared preferences by default. So switch to using
+            // our named shared preferences file "TrackedItemPrefs".
+            getPreferenceManager().setSharedPreferencesName(TRACKED_ITEM_ENTRY_PREFS);
+
             addPreferencesFromResource(R.xml.pref_tracked_item_entry);
+
             setHasOptionsMenu(false);
 
             // Bind the summaries of EditText/List/Dialog/Ringtone preferences

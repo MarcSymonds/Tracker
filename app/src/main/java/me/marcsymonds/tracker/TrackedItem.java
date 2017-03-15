@@ -458,13 +458,16 @@ public class TrackedItem {
         edit.putString(TI_SECONDS_BETWEEN_RESPONSES, String.valueOf(mSecondsBetweenResponses));
         edit.putBoolean(TI_PING, mPing);
         edit.putString(TI_AUTO_RESEND_COMMAND_SECONDS, String.valueOf(mAutoResendSeconds));
-        edit.apply();
+        edit.commit();
+        //edit.apply();
     }
 
     static void clearSharedPreferences(SharedPreferences sp) {
         SharedPreferences.Editor edit = sp.edit();
 
-        edit.putString(TI_NAME, "");
+        edit.clear();
+
+        /*edit.putString(TI_NAME, "");
         edit.putBoolean(TI_ENABLED, true);
         edit.putInt(TI_COLOUR, 0);
         edit.putString(TI_TYPE, TrackedItemTypes.TK103A.toString());
@@ -474,8 +477,9 @@ public class TrackedItem {
         edit.putString(TI_NUMBER_OF_RESPONSES, "1");
         edit.putString(TI_SECONDS_BETWEEN_RESPONSES, "30");
         edit.putBoolean(TI_PING, false);
-        edit.putString(TI_AUTO_RESEND_COMMAND_SECONDS, "60");
-        edit.apply();
+        edit.putString(TI_AUTO_RESEND_COMMAND_SECONDS, "60");*/
+        edit.commit();
+        //edit.apply();
     }
 
     void getFromSharedPreferences(SharedPreferences sp) {
