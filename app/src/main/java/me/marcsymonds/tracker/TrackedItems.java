@@ -14,32 +14,34 @@ import java.util.Locale;
  * Used for managing the list of tracked items.
  */
 class TrackedItems {
+    final static String TRACKED_ITEM_FILE_PREFIX = "TrackedItem";
     final static private String TAG = "TrackedItems";
-
     final static private String TRACKED_ITEMS_DIR = "TrackedItems";
     final static private String TRACKED_ITEMS_HISTORY_DIR = "TrackedItemsHistory";
-    final static String TRACKED_ITEM_FILE_PREFIX = "TrackedItem";
 
     //public static Activity AppActivity = null;
-
+    private static final ArrayList<TrackedItem> mItems = new ArrayList<>();
     private static File mTrackedItemsSaveDir;
     private static File mTrackedItemsHistoryDir;
-
     private static int mHighestID = 0;
-    private static final ArrayList<TrackedItem> mItems = new ArrayList<>();
+    private static String[] mTrackerDeviceValues = null;
+    private static String[] mTrackerDeviceClasses = null;
 
     static void initialise(Activity activity) {
         mTrackedItemsSaveDir = activity.getDir(TRACKED_ITEMS_DIR, 0);
         mTrackedItemsHistoryDir = activity.getDir(TRACKED_ITEMS_HISTORY_DIR, 0);
 
-        loadTrackedItems();
+        mTrackerDeviceValues = activity.getResources().getStringArray(R.array.tracker_device_values);
+        mTrackerDeviceClasses = activity.getResources().getStringArray(R.array.tracker_device_classes);
+
+        loadTrackedItems(activity);
     }
 
-    public static int getHighestID() {
+    static int getHighestID() {
         return mHighestID;
     }
 
-    public static void setHighestID(int highestID) {
+    static void setHighestID(int highestID) {
         mHighestID = highestID;
     }
 
@@ -51,7 +53,20 @@ class TrackedItems {
         return mTrackedItemsHistoryDir;
     }
 
-    private static int loadTrackedItems() {
+    static String getClassForTrackerDevice(String trackerDeviceType) {
+        String className = null;
+
+        for (int i = 0; i < mTrackerDeviceValues.length; i++) {
+            if (trackerDeviceType.equals(mTrackerDeviceValues[i])) {
+                className = mTrackerDeviceClasses[i];
+                break;
+            }
+        }
+
+        return className;
+    }
+
+    private static int loadTrackedItems(Activity activity) {
         //File dir = activity.getDir(TRACKED_ITEMS_DIR, 0);
 
         Log.d(TAG, String.format("Loading tracked items from %s", mTrackedItemsSaveDir.getAbsolutePath()));
@@ -70,7 +85,7 @@ class TrackedItems {
                         mHighestID = ID;
                     }
 
-                    item.loadHistory();
+                    item.setHistory();
                 }
                 catch (FileNotFoundException nf) {
                     Log.e(TAG, String.format("Tracked item file %s not found - %s", file.getAbsoluteFile(), nf.toString()));
@@ -85,9 +100,9 @@ class TrackedItems {
     }
 
     public static int add(TrackedItem trackedItem) {
-        if (trackedItem.getID() == 0) {
-            trackedItem.setID(getNextID());
-        }
+        //if (trackedItem.getID() == 0) {
+        //trackedItem.setID(getNextID());
+        //}
 
         mItems.add(trackedItem);
 
@@ -119,7 +134,7 @@ class TrackedItems {
         item.removeMapMarker();
     }
 
-    private static int getNextID() {
+    static int getNextID() {
         ++mHighestID;
         return mHighestID;
     }

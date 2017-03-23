@@ -33,12 +33,16 @@ class SMSSenderReceiver {
                 String msg;
                 int trackedItemID = intent.getIntExtra("TrackedItemID", 0);
                 TrackedItem trackedItem = TrackedItems.getItemByID(trackedItemID);
+                TrackerDevice trackerDevice;
 
                 if (getResultCode() == Activity.RESULT_OK) {
                     msg = "SMS sent";
 
                     if (trackedItem != null) {
-                        trackedItem.pingSent();
+                        trackerDevice = trackedItem.getTrackerDevice();
+                        if (trackerDevice != null) {
+                            trackerDevice.pingSent(trackedItem);
+                        }
                     }
                 }
                 else {
@@ -65,7 +69,10 @@ class SMSSenderReceiver {
                     }
 
                     if (trackedItem != null) {
-                        trackedItem.pingFailed(getResultCode(), msg);
+                        trackerDevice = trackedItem.getTrackerDevice();
+                        if (trackerDevice != null) {
+                            trackerDevice.pingFailed(trackedItem, getResultCode(), msg);
+                        }
                     }
                 }
 

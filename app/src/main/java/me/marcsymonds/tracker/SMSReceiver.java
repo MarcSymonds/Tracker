@@ -50,8 +50,11 @@ class SMSReceiver {
                             Log.d(TAG, String.format("From:%s, Message:%s", msg.getOriginatingAddress(), msg.getMessageBody()));
 
                             for (TrackedItem ti : TrackedItems.getTrackedItemsList()) {
-                                if (Telephony.sameNumbers(source, ti.getTelephoneNumber(), ti.getTelephoneCountryCode())) {
-                                    ti.messageReceived(context, message);
+                                TrackerDevice td = ti.getTrackerDevice();
+                                if (td != null) {
+                                    if (td.messageReceived(context, ti, source, message)) {
+                                        Log.i(TAG, String.format("Message handled by Tracked Item %s", ti.getName()));
+                                    }
                                 }
                             }
                         }

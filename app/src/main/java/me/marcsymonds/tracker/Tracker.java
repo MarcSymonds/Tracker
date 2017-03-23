@@ -50,49 +50,6 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
 
     private boolean mInitialiseMapLocation = false;
 
-    enum PERMISSION_REQUEST {
-        UNKNOWN(0),
-        LOCATION(1),
-        SEND_SMS(2),
-        RECEIVE_SMS(3),
-        READ_SMS(4);
-
-        private final int mValue;
-
-        PERMISSION_REQUEST(int value) {
-            mValue = value;
-        }
-
-        int getValue() {
-            return mValue;
-        }
-
-        static PERMISSION_REQUEST valueOf(int v) {
-            for (PERMISSION_REQUEST p : PERMISSION_REQUEST.values()) {
-                if (p.getValue() == v) {
-                    return p;
-                }
-            }
-
-            return UNKNOWN;
-        }
-    }
-
-    enum ACTIVITY_REQUEST {
-        UNKNOWN(0),
-        MANAGE_TRACKED_ITEMS(1);
-
-        private final int mValue;
-
-        ACTIVITY_REQUEST(int value) {
-            mValue = value;
-        }
-
-        int getValue() {
-            return mValue;
-        }
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -103,7 +60,6 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
         TrackedItemButtonHelper.initialise(this);
         TrackedItems.initialise(this);
 
-        SMSSender.setActivity();
         SMSSenderReceiver.setupBroadcastReceiver(this);
         SMSReceiver.setupBroadcastReceiver(this);
 
@@ -240,7 +196,6 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
     protected void onDestroy() {
         super.onDestroy();
         SMSReceiver.tearDown(this);
-        SMSSender.tearDown();
         SMSSenderReceiver.tearDown(this);
     }
 
@@ -471,6 +426,49 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
                     mMapFragment.centerMap(trackedItem.getLastLocation());
                 }
             }
+        }
+    }
+
+    enum PERMISSION_REQUEST {
+        UNKNOWN(0),
+        LOCATION(1),
+        SEND_SMS(2),
+        RECEIVE_SMS(3),
+        READ_SMS(4);
+
+        private final int mValue;
+
+        PERMISSION_REQUEST(int value) {
+            mValue = value;
+        }
+
+        static PERMISSION_REQUEST valueOf(int v) {
+            for (PERMISSION_REQUEST p : PERMISSION_REQUEST.values()) {
+                if (p.getValue() == v) {
+                    return p;
+                }
+            }
+
+            return UNKNOWN;
+        }
+
+        int getValue() {
+            return mValue;
+        }
+    }
+
+    enum ACTIVITY_REQUEST {
+        UNKNOWN(0),
+        MANAGE_TRACKED_ITEMS(1);
+
+        private final int mValue;
+
+        ACTIVITY_REQUEST(int value) {
+            mValue = value;
+        }
+
+        int getValue() {
+            return mValue;
         }
     }
 }

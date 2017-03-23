@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string-array name="tracker_names">
+    <string-array name="tracker_device_names">
         <item>TK103A</item>
+    </string-array>
+
+    <string-array name="tracker_device_values">
+        <item>TK103A</item>
+    </string-array>
+
+    <string-array name="tracker_device_classes">
+        <item>TK103AB</item>
     </string-array>
 </resources>

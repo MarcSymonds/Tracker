@@ -1,7 +1,5 @@
 package me.marcsymonds.tracker;
 
-import me.marcsymonds.tracker.BuildConfig;
-
 import android.app.Dialog;
 import android.content.Context;
 import android.content.res.Resources;
@@ -28,6 +26,40 @@ public class AboutDialogFragment extends android.support.v4.app.DialogFragment {
 
     public static AboutDialogFragment newInstance() {
         return new AboutDialogFragment();
+    }
+
+    @Nullable
+    private static String readRawTextFile(Context context, int id) {
+        String output;
+
+        try {
+            InputStream inputStream = context.getResources().openRawResource(id);
+
+            InputStreamReader in = new InputStreamReader(inputStream);
+            BufferedReader buf = new BufferedReader(in);
+
+            String line;
+
+            StringBuilder text = new StringBuilder();
+
+            try {
+                while ((line = buf.readLine()) != null) {
+                    text.append(line);
+                }
+
+                in.close();
+                buf.close();
+                inputStream.close();
+
+                output = text.toString();
+            } catch (IOException e) {
+                output = "!ERROR! " + e.getMessage();
+            }
+        } catch (Resources.NotFoundException nfe) {
+            output = "!Not Found!";
+        }
+
+        return output;
     }
 
     @Override
@@ -77,7 +109,7 @@ public class AboutDialogFragment extends android.support.v4.app.DialogFragment {
 
         tv = (TextView)v.findViewById(R.id.about_copyright);
         tv.setText(getString(R.string.about_copyright));
-        
+
         return v;
     }
 
@@ -89,40 +121,5 @@ public class AboutDialogFragment extends android.support.v4.app.DialogFragment {
     @Override
     public void onDetach() {
         super.onDetach();
-    }
-
-    @Nullable
-    private static String readRawTextFile(Context context, int id) {
-        String output;
-
-        try {
-            InputStream inputStream = context.getResources().openRawResource(id);
-
-            InputStreamReader in = new InputStreamReader(inputStream);
-            BufferedReader buf = new BufferedReader(in);
-
-            String line;
-
-            StringBuilder text = new StringBuilder();
-
-            try {
-                while ((line = buf.readLine()) != null) {
-                    text.append(line);
-                }
-
-                in.close();
-                buf.close();
-                inputStream.close();
-
-                output = text.toString();
-            } catch (IOException e) {
-                output = "!ERROR! " + e.getMessage();
-            }
-        }
-        catch (Resources.NotFoundException nfe) {
-            output = "!Not Found!";
-        }
-
-        return output;
     }
 }
