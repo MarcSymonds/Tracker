@@ -101,6 +101,7 @@ class HistoryManager {
             // Otherwise, set up for the first history file.
             mCurrentHistoryFile = new File(mHistoryFileDirectory, "1");
             mCurrentHistoryFileID = 1;
+            mCurrentHistory = new ArrayList<>();
         }
 
         mHistoryChanged = false;
