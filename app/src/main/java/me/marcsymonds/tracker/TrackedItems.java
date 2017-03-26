@@ -24,14 +24,14 @@ class TrackedItems {
     private static File mTrackedItemsSaveDir;
     private static File mTrackedItemsHistoryDir;
     private static int mHighestID = 0;
-    private static String[] mTrackerDeviceValues = null;
+    private static String[] mTrackerDeviceNames = null;
     private static String[] mTrackerDeviceClasses = null;
 
     static void initialise(Activity activity) {
         mTrackedItemsSaveDir = activity.getDir(TRACKED_ITEMS_DIR, 0);
         mTrackedItemsHistoryDir = activity.getDir(TRACKED_ITEMS_HISTORY_DIR, 0);
 
-        mTrackerDeviceValues = activity.getResources().getStringArray(R.array.tracker_device_values);
+        mTrackerDeviceNames = activity.getResources().getStringArray(R.array.tracker_device_codes);
         mTrackerDeviceClasses = activity.getResources().getStringArray(R.array.tracker_device_classes);
 
         loadTrackedItems(activity);
@@ -56,8 +56,8 @@ class TrackedItems {
     static String getClassForTrackerDevice(String trackerDeviceType) {
         String className = null;
 
-        for (int i = 0; i < mTrackerDeviceValues.length; i++) {
-            if (trackerDeviceType.equals(mTrackerDeviceValues[i])) {
+        for (int i = 0; i < mTrackerDeviceNames.length; i++) {
+            if (trackerDeviceType.equals(mTrackerDeviceNames[i])) {
                 className = mTrackerDeviceClasses[i];
                 break;
             }

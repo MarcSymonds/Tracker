@@ -18,9 +18,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Created by Marc on 15/03/2017.
+ * Class for managing TK103A/B tracker devices.
  */
-
 class TK103AB extends TrackerDevice implements ITrackerDevice {
     private static final String TAG = "TK103AB";
 
@@ -33,7 +32,7 @@ class TK103AB extends TrackerDevice implements ITrackerDevice {
     private static final String TD_AUTO_RESEND_PING = "tracker_device_auto_resend_ping";
     private static final String TD_AUTO_RESEND_PING_DELAY = "tracker_device_auto_resend_ping_delay";
     private static final String mArmCommand = "arm$p";
-    private static final String mDisarmCommand = "arm$p";
+    private static final String mDisarmCommand = "disarm$p";
     private String mTelephoneCountryCode = "44";
     private String mTelephoneNumber = "";
     private String mDevicePassword = "";
@@ -296,7 +295,7 @@ class TK103AB extends TrackerDevice implements ITrackerDevice {
                 trackedItem.newLocationReceived(context, new Location(lat, lng, gps));
 
                 mPingResponsesReceived++;
-                if (mPingResponsesReceived >= mPingResponsesExpected) {
+                if (mPinged && mPingResponsesReceived >= mPingResponsesExpected) {
                     mPinged = false;
                     trackedItem.setPingingButtonState(false);
                 }

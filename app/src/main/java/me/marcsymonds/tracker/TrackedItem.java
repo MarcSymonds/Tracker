@@ -22,20 +22,19 @@ import java.io.IOException;
 import java.util.Locale;
 
 public class TrackedItem {
-    final static private String TI_ID = "id";
-
-    // These values must match the android:key values in the pref_tracked_item_entry.xml file.
-    // These values are also used when saving the record to file.
-    final static private String TI_NAME = "tracked_item_name";
-    final static private String TI_ENABLED = "tracked_item_enabled";
     //final static private String TI_TELEPHONE_COUNTRY_CODE = "tracked_item_telephone_country_code";
     //final static private String TI_TELEPHONE_NUMBER = "tracked_item_telephone_number";
     //final static private String TI_LOCATION_COMMAND = "tracked_item_ping_command";
     //final static private String TI_NUMBER_OF_RESPONSES = "tracked_item_expected_responses";
     //final static private String TI_SECONDS_BETWEEN_RESPONSES = "tracked_item_seconds_between_responses";
     //final static private String TI_AUTO_RESEND_COMMAND_SECONDS = "tracked_item_ping_interval";
-    final static private String TI_COLOUR = "tracked_item_colour";
-    final static private String TI_TYPE = "tracked_item_device_type";
+    final static String TI_COLOUR = "tracked_item_colour";
+    final static String TI_TYPE = "tracked_item_device_type";
+    final static private String TI_ID = "id";
+    // These values must match the android:key values in the pref_tracked_item_entry.xml file.
+    // These values are also used when saving the record to file.
+    final static private String TI_NAME = "tracked_item_name";
+    final static private String TI_ENABLED = "tracked_item_enabled";
     final private String TAG = "TrackedItem";
     //final static private String TI_PING = "tracked_item_auto_ping";
     private int mID = 0;

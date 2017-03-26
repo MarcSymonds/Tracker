@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:key="device_settings"
+    android:persistent="false"
+    android:summary="Device specific settings"
+    android:title="Device Settings">
+
+    <PreferenceCategory xmlns:android="http://schemas.android.com/apk/res/android"
+        android:key="device_specific_settings"
+        android:title="TK103-B Settings">
+
+        <EditTextPreference
+            android:defaultValue="@string/empty_string"
+            android:hint="Password"
+            android:key="tracker_device_password"
+            android:singleLine="true"
+            android:title="Password" />
+
+        <EditTextPreference
+            android:defaultValue="@string/empty_string"
+            android:hint="@string/tracked_item_telephone_country_code_hint"
+            android:key="tracker_device_telephone_country_code"
+            android:phoneNumber="true"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/country_code" />
+
+        <EditTextPreference
+            android:defaultValue="@string/empty_string"
+            android:hint="@string/tracked_item_telephone_number_hint"
+            android:key="tracker_device_telephone_number"
+            android:phoneNumber="true"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/telephone_number" />
+
+        <EditTextPreference
+            android:defaultValue="@string/empty_string"
+            android:hint="@string/tracked_item_ping_command_hint"
+            android:key="tracker_device_ping_command"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/ping_command" />
+
+        <EditTextPreference
+            android:defaultValue="1"
+            android:key="tracker_device_ping_responses"
+            android:maxLength="3"
+            android:numeric="integer"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:summary="3"
+            android:title="@string/number_of_expected_responses" />
+
+        <EditTextPreference
+            android:defaultValue="30"
+            android:key="tracker_device_ping_response_delay"
+            android:maxLength="4"
+            android:numeric="integer"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:summary="30"
+            android:title="@string/seconds_between_responses" />
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="tracker_device_auto_resend_ping"
+            android:summaryOff="@string/tracked_item_auto_ping_off"
+            android:summaryOn="@string/tracked_item_auto_ping_on"
+            android:title="@string/auto_resend_ping_cmd" />
+
+        <EditTextPreference
+            android:defaultValue="60"
+            android:dependency="tracker_device_auto_resend_ping"
+            android:key="tracker_device_auto_resend_ping_delay"
+            android:maxLength="4"
+            android:numeric="integer"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:summary="60"
+            android:title="@string/seconds_between_resends" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>
