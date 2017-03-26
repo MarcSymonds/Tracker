@@ -54,4 +54,7 @@
     <string name="tracked_item_default_device">TK103A</string>
 
     <string name="empty_string"></string>
+
+    <string name="arm_device">Arm device</string>
+    <string name="disarm_device">Disarm device</string>
 </resources>

@@ -24,7 +24,9 @@ interface ITrackerDevice {
 
     void pingDevice(Activity activity, TrackedItem trackedItem);
 
-    void pingSent(TrackedItem trackedItem);
+    boolean messageSent(TrackedItem trackedItem, int action);
 
-    void pingFailed(TrackedItem trackedItem, int resultCode, String message);
+    boolean messageFailed(TrackedItem trackedItem, int action, int resultCode, String message);
+
+    boolean openContextMenu(Activity activity, TrackedItem trackedItem);
 }

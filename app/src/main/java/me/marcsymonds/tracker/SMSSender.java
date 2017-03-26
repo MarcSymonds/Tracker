@@ -2,8 +2,11 @@ package me.marcsymonds.tracker;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.PendingIntent;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.support.v4.app.ActivityCompat;
+import android.telephony.SmsManager;
 import android.widget.Toast;
 
 class SMSSender {
@@ -12,10 +15,11 @@ class SMSSender {
     static final String INTENT_SMS_SENT = "SMS_SENT";
     private static final String TAG = "SMSSender";
 
-    void sendPingMessage(Activity activity, TrackedItem trackedItem) {
+    boolean canSendSMSMessage(Activity activity) {
+        boolean canSend = false;
         // Do we already have permission to send SMS messages>
         if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED) {
-            checkTrackedItem(activity, trackedItem);
+            canSend = true;
         }
         // No. Have we been denied permission previously?
         else if (ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.SEND_SMS)) {
@@ -33,22 +37,40 @@ class SMSSender {
             ActivityCompat.requestPermissions(
                     activity,
                     new String[]{Manifest.permission.SEND_SMS},
-                    Tracker.PERMISSION_REQUEST.SEND_SMS.getValue() + (trackedItem.getID() << 4));
+                    Tracker.PERMISSION_REQUEST.SEND_SMS.getValue());
         }
+
+        return canSend;
     }
 
-    private void checkTrackedItem(final Activity activity, final TrackedItem trackedItem) {
-        if (!trackedItem.isEnabled()) {
+    boolean sendMessage(Activity activity, String recipient, String smsMessage, String toastMessage, int trackedItemID, int action) {
+        boolean couldSend = false;
+
+        if (canSendSMSMessage(activity)) {
+            SmsManager smsManager = SmsManager.getDefault();
+
             Toast.makeText(
                     activity.getApplicationContext(),
-                    String.format("%s is disabled.", trackedItem.getName()),
-                    Toast.LENGTH_LONG)
+                    toastMessage,
+                    Toast.LENGTH_SHORT)
                     .show();
-        } else {
-            TrackerDevice td = trackedItem.getTrackerDevice();
-            if (td != null) {
-                td.pingDevice(activity, trackedItem);
-            }
+
+            Intent intent = new Intent(SMSSender.INTENT_SMS_SENT);
+            intent.putExtra("TrackedItemID", trackedItemID);
+            intent.putExtra("Action", action);
+
+            PendingIntent sentPending = PendingIntent.getBroadcast(activity.getApplicationContext(), 1, intent, PendingIntent.FLAG_ONE_SHOT);
+
+            smsManager.sendTextMessage(
+                    recipient,
+                    null,
+                    smsMessage,
+                    sentPending,
+                    null);
+
+            couldSend = true;
         }
+
+        return couldSend;
     }
 }

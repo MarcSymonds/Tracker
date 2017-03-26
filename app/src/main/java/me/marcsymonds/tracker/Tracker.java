@@ -39,9 +39,12 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
     private final String SAVE_MAP_ZOOM = "MAPZOOM";
     private final String SAVE_MAP_BEARING = "MAPBEARING";
 
+    private final String MY_HISTORY_DIR = "MyHistory";
+
     private MapFragment mMapFragment = null;
     private GoogleMap mMap = null;
     private Location mMyLastLocation = null;
+    private HistoryManager mMyLocationHistory = null;
 
     private CameraPosition mInitialCamera = null;
 
@@ -127,6 +130,7 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
         setSupportActionBar(toolbar);
 
         mButMyLocation = (ImageButton) findViewById(R.id.butMyLocation);
+
     }
 
     @Override
@@ -182,6 +186,10 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
 
         for (TrackedItem ti : TrackedItems.getTrackedItemsList()) {
             ti.saveHistory();
+        }
+
+        if (mMyLocationHistory != null) {
+            mMyLocationHistory.saveHistory();
         }
     }
 
@@ -295,6 +303,12 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
     public void updateMyLocation(Location location) {
         mMyLastLocation = location;
 
+        if (mMyLocationHistory == null) {
+            mMyLocationHistory = new HistoryManager(this.getDir(MY_HISTORY_DIR, MODE_PRIVATE));
+        }
+
+        mMyLocationHistory.recordLocation(location);
+
         if (mItemBeingFollowed == IBF_MY_LOCATION || mInitialiseMapLocation) {
             mMapFragment.centerMap(location, mInitialiseMapLocation ? 16 : -1);
             mInitialiseMapLocation = false;
@@ -310,9 +324,11 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
         switch (Tracker.PERMISSION_REQUEST.valueOf(requestCode)) {
             case SEND_SMS:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    trackedItem = TrackedItems.getItemByID(id);
-                    if (trackedItem != null) {
-                        trackedItem.sendPing(this);
+                    if (id > 0) {
+                        trackedItem = TrackedItems.getItemByID(id);
+                        if (trackedItem != null) {
+                            trackedItem.sendPing(this);
+                        }
                     }
                 }
                 else {
@@ -339,7 +355,7 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
 
         for (TrackedItem ti : TrackedItems.getTrackedItemsList()) {
             if (ti.isEnabled()) {
-                View buttonView = ti.getButton(this).getButtonView();
+                View buttonView = ti.getButton(this, true).getButtonContainerView();
                 container.addView(buttonView);
 
             }
@@ -371,13 +387,18 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
     }
 
     @Override
-    public void trackedItemButtonClick(TrackedItem trackedItem, boolean longClick) {
-        if (longClick) {
-            trackedItem.sendPing(this);
-        }
-        else {
-            setItemBeingFollowed(trackedItem.getID());
-        }
+    public void trackedItemButtonClick(TrackedItem trackedItem) {
+        setItemBeingFollowed(trackedItem.getID());
+    }
+
+    @Override
+    public void trackedItemButtonLongClick(TrackedItem trackedItem) {
+        trackedItem.sendPing(this);
+    }
+
+    @Override
+    public void trackedItemButtonDoubleClick(TrackedItem trackedItem) {
+        trackedItem.getTrackerDevice().openContextMenu(this, trackedItem);
     }
 
     private void trackedItemLocationUpdate(TrackedItem trackedItem, Location location) {

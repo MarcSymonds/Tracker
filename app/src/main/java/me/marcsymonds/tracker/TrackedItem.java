@@ -22,12 +22,6 @@ import java.io.IOException;
 import java.util.Locale;
 
 public class TrackedItem {
-    //final static private String TI_TELEPHONE_COUNTRY_CODE = "tracked_item_telephone_country_code";
-    //final static private String TI_TELEPHONE_NUMBER = "tracked_item_telephone_number";
-    //final static private String TI_LOCATION_COMMAND = "tracked_item_ping_command";
-    //final static private String TI_NUMBER_OF_RESPONSES = "tracked_item_expected_responses";
-    //final static private String TI_SECONDS_BETWEEN_RESPONSES = "tracked_item_seconds_between_responses";
-    //final static private String TI_AUTO_RESEND_COMMAND_SECONDS = "tracked_item_ping_interval";
     final static String TI_COLOUR = "tracked_item_colour";
     final static String TI_TYPE = "tracked_item_device_type";
     final static private String TI_ID = "id";
@@ -36,23 +30,14 @@ public class TrackedItem {
     final static private String TI_NAME = "tracked_item_name";
     final static private String TI_ENABLED = "tracked_item_enabled";
     final private String TAG = "TrackedItem";
-    //final static private String TI_PING = "tracked_item_auto_ping";
     private int mID = 0;
 
-    //private Activity mActivity;
     private boolean mEnabled = false;
     private String mName = "";
-    //private String mTelephoneCountryCode = "44";
-    //private String mTelephoneNumber = "";
-    //private String mLocationCommand = "";
-    //private int mNumberOfResponses = 1;
-    //private int mSecondsBetweenResponses = 30;
-    //private int mAutoResendSeconds = 0;
     private int mColour = 0; // Colour is used for the map marker. The map uses hues for colouring, so this value is the hue (0-359) and is converted to an actual colour where needed.
     private String mTrackerDeviceType = "";
     private TrackerDevice mTrackerDevice = null;
     private File mSaveFile = null;
-    //private boolean mPing = false;
     private File mHistoryDirectory;
     private HistoryManager mHistory;
     private TrackedItemButton mButton = null;
@@ -211,11 +196,10 @@ public class TrackedItem {
         mEnabled = enabled;
     }
 
-    TrackedItemButton getButton(Activity activity) {
+    TrackedItemButton getButton(Activity activity, boolean updateAppearance) {
         if (mButton == null) {
             mButton = new TrackedItemButton(activity, this);
-        }
-        else {
+        } else if (updateAppearance) {
             mButton.setButtonAppearance();
         }
 
@@ -310,11 +294,6 @@ public class TrackedItem {
         return mID;
     }
 
-    //void setID(int id) {
-    //mID = id;
-    //mHistoryFileDirectory = getHistoryDir();
-    //}
-
     String getName() {
         return mName;
     }
@@ -326,54 +305,6 @@ public class TrackedItem {
     int getColour() {
         return mColour;
     }
-
-    /*String getTelephoneCountryCode() {
-        return mTelephoneCountryCode;
-    }*/
-
-    /*public void setTelephoneCountryCode(String code) {
-        mTelephoneNumber = code;
-    }*/
-
-    /*public String getTelephoneNumber() {
-        return mTelephoneNumber;
-    }*/
-
-    /*public void setTelephoneNumber(String telephoneNumber) {
-        mTelephoneNumber = telephoneNumber;
-    }*/
-
-    /*public String getLocationCommand() {
-        return mLocationCommand;
-    }*/
-
-    /*public void setLocationCommand(String locationCommand) {
-        mLocationCommand = locationCommand;
-    }*/
-
-    /*public int getNumberOfResponses() {
-        return mNumberOfResponses;
-    }*/
-
-    /*public void setNumberOfResponses(int numberOfResponses) {
-        mNumberOfResponses = numberOfResponses;
-    }*/
-
-    /*public int getSecondsBetweenResponses() {
-        return mSecondsBetweenResponses;
-    }*/
-
-    /*public void setSecondsBetweenResponses(int secondsBetweenResponses) {
-        mSecondsBetweenResponses = secondsBetweenResponses;
-    }*/
-
-    /*public int getAutoResendSeconds() {
-        return mAutoResendSeconds;
-    }*/
-
-    /*public void setAutoResendSeconds(int autoResendSeconds) {
-        mAutoResendSeconds = autoResendSeconds;
-    }*/
 
     void setColour(int colour) {
         mColour = colour;
@@ -423,14 +354,6 @@ public class TrackedItem {
         }
     }
 
-    /*public boolean getAutoResendCommand() {
-        return mPing;
-    }*/
-
-    /*public void setAutoResendCommand(boolean ping) {
-        mPing = ping;
-    }*/
-
     void clearSharedPreferences(SharedPreferences sp) {
         SharedPreferences.Editor edit = sp.edit();
 
@@ -461,25 +384,10 @@ public class TrackedItem {
     }
 
     public void sendPing(Activity activity) {
-        SMSSender sender = new SMSSender();
-        sender.sendPingMessage(activity, this);
+        if (mTrackerDevice != null) {
+            mTrackerDevice.pingDevice(activity, this);
+        }
     }
-
-    //public int getNumberOfResponsesReceived() {
-    //return mNumberOfResponsesReceived;
-    //}
-
-    //public void setNumberOfResponsesReceived(int responses) {
-    //mNumberOfResponsesReceived = responses;
-    //}
-
-    //public boolean getSentPingRequest() {
-    //return mSentPingRequest;
-    //}
-
-    //public void setSentPingRequest(boolean sent) {
-    //mSentPingRequest = sent;
-    //}
 //endregion
 
     void newLocationReceived(Context context, Location location) {
@@ -509,17 +417,6 @@ public class TrackedItem {
     void saveHistory() {
         if (mHistory != null) {
             mHistory.saveHistory();
-        }
-    }
-
-    enum TrackedItemTypes {
-        UNKNOWN(0),
-        TK103A(1);
-
-        final int value;
-
-        TrackedItemTypes(int id) {
-            this.value = id;
         }
     }
 }

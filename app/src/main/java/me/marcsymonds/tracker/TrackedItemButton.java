@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Build;
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,6 +24,8 @@ class TrackedItemButton implements Button.OnClickListener, Button.OnLongClickLis
     private final Button mButtonView;
     private final ImageView mFollowingImage;
     private final ImageView mPingingImage;
+    private Handler mDoubleClickHandler = null;
+    private Runnable mDoubleClickRunner = null;
 
     TrackedItemButton(Activity activity, TrackedItem trackedItem) {
         mActivity = activity;
@@ -82,9 +85,9 @@ class TrackedItemButton implements Button.OnClickListener, Button.OnLongClickLis
         int normalColour = Color.HSVToColor(75, new float[] {(float)itemColour, 1, 1}); // Lighter colour normally.
 
         int[] backgroundColours = {
-                Color.BLUE,
+                Color.BLUE, // Not used in this app - just an example.
                 pressedColour,
-                Color.GREEN,
+                Color.GREEN, // Not used in this app - just an example.
                 normalColour
         };
 
@@ -117,8 +120,12 @@ class TrackedItemButton implements Button.OnClickListener, Button.OnLongClickLis
         }
     }
 
-    View getButtonView() {
+    View getButtonContainerView() {
         return mButtonContainerView;
+    }
+
+    View getButtonView() {
+        return mButtonView;
     }
 
     void setFollowingImage(boolean on) {
@@ -132,7 +139,7 @@ class TrackedItemButton implements Button.OnClickListener, Button.OnLongClickLis
     @Override
     public boolean onLongClick(View view) {
         if (mActivity instanceof ITrackedItemActions) {
-            ((ITrackedItemActions) mActivity).trackedItemButtonClick(mTrackedItem, true);
+            ((ITrackedItemActions) mActivity).trackedItemButtonLongClick(mTrackedItem);
         }
         else {
             Log.e(TAG, "AppActivity not instance of ITrackedItemActions");
@@ -142,8 +149,29 @@ class TrackedItemButton implements Button.OnClickListener, Button.OnLongClickLis
 
     @Override
     public void onClick(View view) {
+        Log.d(TAG, "Click");
         if (mActivity instanceof ITrackedItemActions) {
-            ((ITrackedItemActions) mActivity).trackedItemButtonClick(mTrackedItem, false);
+            if (mDoubleClickHandler == null) {
+                Log.d(TAG, "Setting up Single Click");
+                mDoubleClickHandler = new Handler();
+                mDoubleClickRunner = new Runnable() {
+                    @Override
+                    public void run() {
+                        ((ITrackedItemActions) mActivity).trackedItemButtonClick(mTrackedItem);
+
+                        mDoubleClickHandler = null;
+                        mDoubleClickRunner = null;
+                    }
+                };
+
+                mDoubleClickHandler.postDelayed(mDoubleClickRunner, 250);
+            } else {
+                mDoubleClickHandler.removeCallbacks(mDoubleClickRunner);
+                mDoubleClickHandler = null;
+                mDoubleClickRunner = null;
+
+                ((ITrackedItemActions) mActivity).trackedItemButtonDoubleClick(mTrackedItem);
+            }
         }
     }
 }

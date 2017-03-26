@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/arm_device"
+        android:title="@string/arm_device" />
+    <item
+        android:id="@+id/disarm_device"
+        android:title="@string/disarm_device" />
+</menu>

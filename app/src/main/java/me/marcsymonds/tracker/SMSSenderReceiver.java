@@ -31,7 +31,10 @@ class SMSSenderReceiver {
             @Override
             public void onReceive(Context context, Intent intent) {
                 String msg;
+                boolean showMsg = true;
                 int trackedItemID = intent.getIntExtra("TrackedItemID", 0);
+                int action = intent.getIntExtra("Action", 0);
+
                 TrackedItem trackedItem = TrackedItems.getItemByID(trackedItemID);
                 TrackerDevice trackerDevice;
 
@@ -40,8 +43,8 @@ class SMSSenderReceiver {
 
                     if (trackedItem != null) {
                         trackerDevice = trackedItem.getTrackerDevice();
-                        if (trackerDevice != null) {
-                            trackerDevice.pingSent(trackedItem);
+                        if (action == TrackerDevice.ACTION_SENT_PING && trackerDevice != null) {
+                            showMsg = trackerDevice.messageSent(trackedItem, action);
                         }
                     }
                 }
@@ -71,12 +74,14 @@ class SMSSenderReceiver {
                     if (trackedItem != null) {
                         trackerDevice = trackedItem.getTrackerDevice();
                         if (trackerDevice != null) {
-                            trackerDevice.pingFailed(trackedItem, getResultCode(), msg);
+                            showMsg = trackerDevice.messageFailed(trackedItem, action, getResultCode(), msg);
                         }
                     }
                 }
 
-                Toast.makeText(activity.getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
+                if (showMsg) {
+                    Toast.makeText(activity.getApplicationContext(), msg, Toast.LENGTH_SHORT).show();
+                }
             }
         };
 

@@ -2,13 +2,12 @@ package me.marcsymonds.tracker;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.SharedPreferences;
-import android.telephony.SmsManager;
+import android.support.v7.widget.PopupMenu;
 import android.util.Log;
+import android.view.MenuItem;
 import android.widget.Toast;
 
 import java.io.BufferedWriter;
@@ -197,39 +196,42 @@ class TK103AB extends TrackerDevice implements ITrackerDevice {
     }
 
     private void doSendPingMessage(Activity activity, TrackedItem trackedItem) {
-        SmsManager smsManager = SmsManager.getDefault();
+        SMSSender sender = new SMSSender();
 
-        Toast.makeText(
-                activity.getApplicationContext(),
-                String.format("Sending location request to %s", trackedItem.getName()),
-                Toast.LENGTH_SHORT)
-                .show();
-
-        Intent intent = new Intent(SMSSender.INTENT_SMS_SENT);
-        intent.putExtra("TrackedItemID", trackedItem.getID());
-        PendingIntent sentPending = PendingIntent.getBroadcast(activity.getApplicationContext(), 1, intent, PendingIntent.FLAG_ONE_SHOT);
-
-        smsManager.sendTextMessage(
+        sender.sendMessage(
+                activity,
                 mTelephoneNumber,
-                null,
                 addPasswordToCommand(mPingCommand),
-                sentPending,
-                null);
+                String.format("Sending location request to %s", trackedItem.getName()),
+                trackedItem.getID(),
+                ACTION_SENT_PING);
     }
 
     @Override
-    public void pingSent(TrackedItem trackedItem) {
-        mPinged = true;
-        mPingResponsesReceived = 0;
+    public boolean messageSent(TrackedItem trackedItem, int action) {
+        switch (action) {
+            case TrackerDevice.ACTION_SENT_PING:
+                mPinged = true;
+                mPingResponsesReceived = 0;
 
-        trackedItem.setPingingButtonState(true);
+                trackedItem.setPingingButtonState(true);
+                break;
+        }
 
         //TODO: Set up alarm to resend the ping after specified time.
+
+        return true;
     }
 
     @Override
-    public void pingFailed(TrackedItem trackedItem, int resultCode, String message) {
-        trackedItem.setPingingButtonState(false);
+    public boolean messageFailed(TrackedItem trackedItem, int action, int resultCode, String message) {
+        switch (action) {
+            case TrackerDevice.ACTION_SENT_PING:
+                trackedItem.setPingingButtonState(false);
+                break;
+        }
+
+        return true;
     }
 
     @Override
@@ -294,10 +296,12 @@ class TK103AB extends TrackerDevice implements ITrackerDevice {
             if (found) {
                 trackedItem.newLocationReceived(context, new Location(lat, lng, gps));
 
-                mPingResponsesReceived++;
-                if (mPinged && mPingResponsesReceived >= mPingResponsesExpected) {
-                    mPinged = false;
-                    trackedItem.setPingingButtonState(false);
+                if (mPinged) {
+                    mPingResponsesReceived++;
+                    if (mPingResponsesReceived >= mPingResponsesExpected) {
+                        mPinged = false;
+                        trackedItem.setPingingButtonState(false);
+                    }
                 }
 
                 handled = true;
@@ -314,5 +318,55 @@ class TK103AB extends TrackerDevice implements ITrackerDevice {
 
     private String addPasswordToCommand(String command) {
         return command.replaceAll("\\$p", mDevicePassword == null ? "" : mDevicePassword);
+    }
+
+    @Override
+    public boolean openContextMenu(final Activity activity, final TrackedItem trackedItem) {
+        PopupMenu pm = new PopupMenu(activity, trackedItem.getButton(activity, false).getButtonView());
+        pm.inflate(R.menu.menu_tk103ab);
+        pm.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                switch (item.getItemId()) {
+                    case R.id.arm_device:
+                        armDevice(activity, trackedItem);
+                        break;
+
+                    case R.id.disarm_device:
+                        disarmDevice(activity, trackedItem);
+                        break;
+                }
+
+                return true;
+            }
+        });
+        pm.show();
+
+        return true;
+    }
+
+    private void armDevice(Activity activity, TrackedItem trackedItem) {
+        SMSSender sender = new SMSSender();
+
+        sender.sendMessage(
+                activity,
+                mTelephoneNumber,
+                addPasswordToCommand(mArmCommand),
+                String.format("Sending arm command to %s", trackedItem.getName()),
+                trackedItem.getID(),
+                ACTION_SENT_ARM);
+
+    }
+
+    private void disarmDevice(Activity activity, TrackedItem trackedItem) {
+        SMSSender sender = new SMSSender();
+
+        sender.sendMessage(
+                activity,
+                mTelephoneNumber,
+                addPasswordToCommand(mDisarmCommand),
+                String.format("Sending disarm command to %s", trackedItem.getName()),
+                trackedItem.getID(),
+                ACTION_SENT_DISARM);
     }
 }
