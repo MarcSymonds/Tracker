@@ -13,17 +13,14 @@ import java.util.Locale;
 /**
  * This class is used to receive messages from the SMS service once it has sent an SMS to a tracker
  * device. This is just looking for success/failure of the SMS being sent, it is not looking for
- * and response from the tracker. That is dealt with by TODO: other class.
+ * and response from the tracker. That is dealt with by the TrackerDevice for the tracked item.
  */
 class SMSSenderReceiver {
     private static final String TAG = "SMSSenderReceiver";
 
-    //private static Activity mActivity;
     private static BroadcastReceiver mBroadcastReceiver;
 
     static void setupBroadcastReceiver(final Activity activity) {
-        //mActivity = activity;
-
         // Filter for messages to receive.
         IntentFilter filt = new IntentFilter(SMSSender.INTENT_SMS_SENT);
 
@@ -91,6 +88,5 @@ class SMSSenderReceiver {
     public static void tearDown(Activity activity) {
         activity.unregisterReceiver(mBroadcastReceiver);
         mBroadcastReceiver = null;
-        //activity = null;
     }
 }
