@@ -8,7 +8,6 @@ import android.content.SharedPreferences;
 import android.support.v7.widget.PopupMenu;
 import android.util.Log;
 import android.view.MenuItem;
-import android.widget.Toast;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -165,13 +164,13 @@ class TK103AB extends TrackerDevice implements ITrackerDevice {
 
     @Override
     public void pingDevice(final Activity activity, final TrackedItem trackedItem) {
-        if (mTelephoneNumber.length() == 0) {
+        /*if (mTelephoneNumber.length() == 0) {
             Toast.makeText(
                     activity.getApplicationContext(),
                     String.format("Telephone number not set for %s", trackedItem.getName()),
                     Toast.LENGTH_LONG)
                     .show();
-        } else {
+        } else {*/
             int awaiting = mPingResponsesExpected - mPingResponsesReceived;
             if (mPinged && awaiting > 0) {
                 new AlertDialog.Builder(activity)
@@ -192,7 +191,7 @@ class TK103AB extends TrackerDevice implements ITrackerDevice {
             } else {
                 doSendPingMessage(activity, trackedItem);
             }
-        }
+        //}
     }
 
     private void doSendPingMessage(Activity activity, TrackedItem trackedItem) {

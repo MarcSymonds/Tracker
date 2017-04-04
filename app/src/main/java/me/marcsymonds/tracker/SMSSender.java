@@ -2,9 +2,13 @@ package me.marcsymonds.tracker;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.PendingIntent;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
+import android.os.Build;
 import android.support.v4.app.ActivityCompat;
 import android.telephony.SmsManager;
 import android.widget.Toast;
@@ -47,28 +51,64 @@ class SMSSender {
         boolean couldSend = false;
 
         if (canSendSMSMessage(activity)) {
-            SmsManager smsManager = SmsManager.getDefault();
+            if (recipient == null || recipient.length() == 0) {
+                TrackedItem trackedItem = TrackedItems.getItemByID(trackedItemID);
 
-            Toast.makeText(
-                    activity.getApplicationContext(),
-                    toastMessage,
-                    Toast.LENGTH_SHORT)
-                    .show();
+                Toast.makeText(
+                        activity.getApplicationContext(),
+                        String.format(
+                                activity.getResources().getString(R.string.error_unable_to_send_no_recipient),
+                                trackedItem == null ? "?" : trackedItem.getName()),
+                        Toast.LENGTH_SHORT)
+                        .show();
+            } else {
+                try {
+                    SmsManager smsManager = SmsManager.getDefault();
 
-            Intent intent = new Intent(SMSSender.INTENT_SMS_SENT);
-            intent.putExtra("TrackedItemID", trackedItemID);
-            intent.putExtra("Action", action);
+                    Toast.makeText(
+                            activity.getApplicationContext(),
+                            toastMessage,
+                            Toast.LENGTH_SHORT)
+                            .show();
 
-            PendingIntent sentPending = PendingIntent.getBroadcast(activity.getApplicationContext(), 1, intent, PendingIntent.FLAG_ONE_SHOT);
+                    Intent intent = new Intent(SMSSender.INTENT_SMS_SENT);
+                    intent.putExtra("TrackedItemID", trackedItemID);
+                    intent.putExtra("Action", action);
 
-            smsManager.sendTextMessage(
-                    recipient,
-                    null,
-                    smsMessage,
-                    sentPending,
-                    null);
+                    PendingIntent sentPending = PendingIntent.getBroadcast(activity.getApplicationContext(), 1, intent, PendingIntent.FLAG_ONE_SHOT);
 
-            couldSend = true;
+                    smsManager.sendTextMessage(
+                            recipient,
+                            null,
+                            smsMessage,
+                            sentPending,
+                            null);
+
+                    couldSend = true;
+                } catch (Exception ex) {
+                    Resources res = activity.getResources();
+                    AlertDialog.Builder msg = new AlertDialog.Builder(activity);
+
+                    msg
+                            .setTitle("Error sending SMS message")
+                            .setMessage(ex.getMessage())
+                            .setNegativeButton(res.getString(android.R.string.ok), new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    // Do nothing.
+                                }
+                            })
+                            .setCancelable(true);
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        msg.setIcon(res.getDrawable(android.R.drawable.ic_menu_info_details, null));
+                    } else {
+                        msg.setIcon(res.getDrawable(android.R.drawable.ic_menu_info_details));
+                    }
+
+                    msg.show();
+                }
+            }
         }
 
         return couldSend;
