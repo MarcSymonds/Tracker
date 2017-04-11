@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pref_header_upload_history">Upload History Settings</string>
+
+    <string name="pref_upload_history_url_hint">http://someServer/TrackerHistory</string>
+
+    <string name="pref_upload_history_local_url">Local history upload Web URL</string>
+    <string name="pref_upload_history_remote_url">Remote history upload Web URL</string>
+</resources>

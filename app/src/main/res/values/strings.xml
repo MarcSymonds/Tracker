@@ -34,29 +34,22 @@
     <string name="following">Following</string>
     <string name="follow_my_location">Follow my location</string>
 
+    <string name="uploading_history">Uploading History</string>
+
     <string name="delete_selected_items_title">Delete Selected Items?</string>
     <string name="delete_selected_items_message">Are you sure that you want to delete the selected items?</string>
 
     <string name="title_activity_tracked_item_entry">Tracked Item</string>
 
-    <string name="tracked_item_name_hint">Name for Tracked Item</string>
-    <string name="tracked_item_telephone_country_code_hint">Country calling code</string>
-    <string name="tracked_item_telephone_number_hint">Telephone number of device</string>
-    <string name="tracked_item_ping_command_hint">SMS message to send to device</string>
-    <string name="tracked_item_colour_summary">Colour of marker displayed on map</string>
-
-    <string name="tracked_item_enable_on">Tracked item is visible on map and can be pinged</string>
-    <string name="tracked_item_enable_off">Tracked item is not visible on map and can\'t be pinged</string>
-
-    <string name="tracked_item_auto_ping_on">The Ping Command will be automatically sent again after time specified below</string>
-    <string name="tracked_item_auto_ping_off">The Ping Command will not automatically be resent</string>
-
-    <string name="tracked_item_default_device">TK103A</string>
-
     <string name="empty_string"></string>
 
     <string name="arm_device">Arm device</string>
     <string name="disarm_device">Disarm device</string>
+    <string name="check_device">Check device</string>
 
     <string name="error_unable_to_send_no_recipient">Unable to send message; telephone number not set for %s.</string>
+    <string name="title_activity_settings">Settings</string>
+
+    <!-- Strings related to Settings -->
+
 </resources>

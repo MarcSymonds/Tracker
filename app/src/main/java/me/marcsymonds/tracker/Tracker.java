@@ -2,12 +2,15 @@ package me.marcsymonds.tracker;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -26,7 +29,7 @@ import com.google.android.gms.maps.model.LatLng;
 
 import java.text.ParseException;
 
-public class Tracker extends AppCompatActivity implements IMapFragmentActions, ITrackedItemActions {
+public class Tracker extends AppCompatActivity implements IMapFragmentActions, ITrackedItemActions, IHistoryUploaderController {
     private final String TAG = "Tracker";
 
     private final int IBF_NONE = -1;
@@ -53,6 +56,8 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
 
     private boolean mInitialiseMapLocation = false;
 
+    private HistoryUploader mHistoryUploader = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -62,6 +67,7 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
         Telephony.initialise(this);
         TrackedItemButtonHelper.initialise(this);
         TrackedItems.initialise(this);
+        HistoryRecorder.initialise(this);
 
         SMSSenderReceiver.setupBroadcastReceiver(this);
         SMSReceiver.setupBroadcastReceiver(this);
@@ -110,7 +116,8 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
                 switch(event) {
                     case "TRACKED-ITEM-LOCATION-UPDATE":
                         try {
-                            TrackedItem trackedItem = TrackedItems.getItemByID(intent.getIntExtra("TRACKED-ITEM", 0));
+                            int id = intent.getIntExtra("TRACKED-ITEM", 0);
+                            TrackedItem trackedItem = TrackedItems.getItemByID(id);
                             locationString = intent.getStringExtra("LOCATION");
                             Location loc = new Location(locationString);
                             trackedItemLocationUpdate(trackedItem, loc);
@@ -183,19 +190,15 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
         super.onPause();
 
         Log.d(TAG, "onPause");
-
-        for (TrackedItem ti : TrackedItems.getTrackedItemsList()) {
-            ti.saveHistory();
-        }
-
-        if (mMyLocationHistory != null) {
-            mMyLocationHistory.saveHistory();
-        }
     }
 
     @Override
     protected void onStop() {
         super.onStop();
+
+        if (mHistoryUploader != null) {
+            mHistoryUploader.stop();
+        }
 
         Log.d(TAG, "onStop");
     }
@@ -205,6 +208,7 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
         super.onDestroy();
         SMSReceiver.tearDown(this);
         SMSSenderReceiver.tearDown(this);
+        HistoryRecorder.tearDown(this);
     }
 
     @Override
@@ -228,6 +232,19 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
             case R.id.mmTrackedItems:
                 intent = new Intent(this, TrackedItemListActivity.class);
                 startActivityForResult(intent, ACTIVITY_REQUEST.MANAGE_TRACKED_ITEMS.getValue());
+                break;
+
+            case R.id.mmSettings:
+                intent = new Intent(this, SettingsActivity.class);
+                startActivityForResult(intent, ACTIVITY_REQUEST.UNKNOWN.getValue());
+                break;
+
+            case R.id.mmUploadHistory:
+                if (mHistoryUploader == null || mHistoryUploader.isCompleted()) {
+                    mHistoryUploader = new HistoryUploader(this);
+                    String[] files = HistoryRecorder.getHistoryManager().getListOfFilesForUpload();
+                    mHistoryUploader.execute(files);
+                }
                 break;
         }
 
@@ -301,13 +318,25 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
 
     @Override
     public void updateMyLocation(Location location) {
-        mMyLastLocation = location;
-
         if (mMyLocationHistory == null) {
             mMyLocationHistory = new HistoryManager(this.getDir(MY_HISTORY_DIR, MODE_PRIVATE));
         }
 
-        mMyLocationHistory.recordLocation(location);
+        //if (mMyLastLocation != null) {
+        //Log.d(TAG, String.format("Distance from %s to %s = %f", mMyLastLocation.toString(), location.toString(), mMyLastLocation.distanceTo(location)));
+        //}
+
+        // Only record new location if actually moved a bit.
+        // Non-GPS determined positions can be out by quite a bit.
+        if (mMyLastLocation == null
+                || (mMyLastLocation.isGPS() && location.isGPS() && mMyLastLocation.distanceTo(location) > 4.0)
+                || (mMyLastLocation.distanceTo(location) > 9.0)) {
+
+            mMyLocationHistory.recordLocation(location);
+            HistoryRecorder.recordHistory(location);
+
+            mMyLastLocation = location;
+        }
 
         if (mItemBeingFollowed == IBF_MY_LOCATION || mInitialiseMapLocation) {
             mMapFragment.centerMap(location, mInitialiseMapLocation ? 16 : -1);
@@ -448,6 +477,71 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
                 }
             }
         }
+    }
+
+    @Override
+    public void HistoryUploadComplete(HistoryUploader uploader, HistoryUploaderState result) {
+        Exception exception = uploader.getException();
+
+        switch (result) {
+            case SUCCESS:
+                toastMessage("History uploaded");
+                break;
+
+            case NO_URLS:
+                toastMessage("No URLs defined to upload history");
+                break;
+
+            case UNABLE_TO_CONNECT:
+                if (exception == null) {
+                    toastMessage("Unable to connect to upload server");
+                } else {
+                    alertMessage("Failed to connect", exception.getMessage());
+                }
+                break;
+
+            case CANCELLED:
+                toastMessage("Upload cancelled");
+                break;
+
+            case STOPPED:
+                break;
+
+            case FAILED:
+                if (exception == null) {
+                    toastMessage("Upload failed - Reason unknown");
+                } else {
+                    alertMessage("Upload failed", exception.getMessage());
+                }
+                break;
+
+            default:
+                alertMessage("Unknown result - " + result.toString(), exception == null ? "" : exception.getMessage());
+                break;
+        }
+
+        mHistoryUploader = null;
+    }
+
+    private void toastMessage(String message) {
+        Toast.makeText(this.getApplicationContext(), message, Toast.LENGTH_LONG).show();
+    }
+
+    private void alertMessage(String title, String message) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        Resources res = this.getResources();
+
+        builder
+                .setTitle(title)
+                .setMessage(message)
+                .setNegativeButton(res.getString(android.R.string.no), new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                    }
+                })
+                .setCancelable(true)
+                .show();
     }
 
     enum PERMISSION_REQUEST {

@@ -6,6 +6,17 @@
         android:id="@+id/mmTrackedItems"
         android:title="@string/main_menu_tracked_items"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/mmUploadHistory"
+        android:title="@string/main_menu_upload_history"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/mmSettings"
+        android:title="Settings"
+        app:showAsAction="never" />
+
     <item
         android:id="@+id/mmAbout"
         android:title="@string/main_menu_about"

@@ -3,9 +3,9 @@ package me.marcsymonds.tracker;
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.graphics.Color;
 import android.preference.Preference;
 import android.util.AttributeSet;
-import android.graphics.Color;
 import android.util.Log;
 import android.view.View;
 

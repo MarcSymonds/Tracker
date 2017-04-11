@@ -45,12 +45,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".TrackedItemListActivity"
             android:label="@string/title_activity_tracked_item_list"
             android:parentActivityName=".Tracker" />
-
         <activity
             android:name=".TrackedItemEntryActivity"
             android:label="@string/title_activity_tracked_item_entry"
@@ -59,5 +57,14 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="me.marcsymonds.tracker.TrackedItemListActivity" />
         </activity>
+        <activity
+            android:name=".SettingsActivity"
+            android:label="@string/title_activity_settings"
+            android:parentActivityName=".Tracker">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="me.marcsymonds.tracker.Tracker" />
+        </activity>
     </application>
+
 </manifest>

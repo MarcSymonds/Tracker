@@ -293,7 +293,7 @@ class TK103AB extends TrackerDevice implements ITrackerDevice {
             }
 
             if (found) {
-                trackedItem.newLocationReceived(context, new Location(lat, lng, gps));
+                trackedItem.newLocationReceived(context, new Location(trackedItem.getID(), lat, lng, gps));
 
                 if (mPinged) {
                     mPingResponsesReceived++;
@@ -313,6 +313,11 @@ class TK103AB extends TrackerDevice implements ITrackerDevice {
     @Override
     public boolean isMessageFor(String source) {
         return Telephony.sameNumbers(source, mTelephoneNumber, mTelephoneCountryCode);
+    }
+
+    @Override
+    public String getTelephoneNumber() {
+        return mTelephoneNumber;
     }
 
     private String addPasswordToCommand(String command) {

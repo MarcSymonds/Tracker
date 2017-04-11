@@ -29,4 +29,6 @@ interface ITrackerDevice {
     boolean messageFailed(TrackedItem trackedItem, int action, int resultCode, String message);
 
     boolean openContextMenu(Activity activity, TrackedItem trackedItem);
+
+    String getTelephoneNumber();
 }

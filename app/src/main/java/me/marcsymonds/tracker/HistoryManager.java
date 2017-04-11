@@ -3,8 +3,8 @@ package me.marcsymonds.tracker;
 import android.util.Log;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -19,19 +19,34 @@ class HistoryManager {
     private final static int MAX_HISTORY_ENTRIES_PER_FILE = 50;
     private final static int MAX_RECENT_HISTORY = 10;
     private final String TAG = "HistoryManager";
+
     private File mHistoryFileDirectory; // Directory where history files for this instance are located.
     private ArrayList<String> mHistoryFiles; // List of existing history file names.
     private File mCurrentHistoryFile; // Current/Last history file.
     private int mCurrentHistoryFileID; // ID of the Current/Last history file.
-    private ArrayList<Location> mCurrentHistory;
+    private int mEntriesInCurrentFile = 0;
     private ArrayList<Location> mRecentHistory;
     private boolean mHistoryChanged;
+    private int mMaxHistoryFiles = MAX_HISTORY_FILES;
+    private int mMaxEntriesPerFile = MAX_HISTORY_ENTRIES_PER_FILE;
+    private boolean mHistoryRecorder = false;
 
     HistoryManager(File historyDir) {
+        initialise(historyDir, MAX_HISTORY_FILES, MAX_HISTORY_ENTRIES_PER_FILE, false);
+    }
+
+    HistoryManager(File historyDir, int maxHistoryFiles, int maxEntriesperFile, boolean historyRecorder) {
+        initialise(historyDir, maxHistoryFiles, maxEntriesperFile, historyRecorder);
+    }
+
+    private void initialise(File historyDir, int maxHistoryFiles, int maxEntriesPerFile, boolean historyRecorder) {
         int histID;
         int i;
 
         mHistoryFileDirectory = historyDir;
+        mMaxHistoryFiles = maxHistoryFiles;
+        mMaxEntriesPerFile = maxEntriesPerFile;
+        mHistoryRecorder = historyRecorder;
 
         Log.d(TAG, String.format("Loading history from directory %s", mHistoryFileDirectory.getAbsoluteFile()));
 
@@ -59,49 +74,60 @@ class HistoryManager {
             } else if (histID < Integer.parseInt(mHistoryFiles.get(0))) {
                 mHistoryFiles.add(0, file.getName());
             } else {
-                i = 0;
-                while (histID < Integer.parseInt(mHistoryFiles.get(i))) {
+                i = 1;
+                while (histID > Integer.parseInt(mHistoryFiles.get(i))) {
                     ++i;
                 }
                 mHistoryFiles.add(i, file.getName());
             }
         }
 
-        Log.d(TAG, "History files:-");
-        for (String s : mHistoryFiles) {
-            Log.d(TAG, "+++ " + s);
+        {
+            String a = "";
+            for (String b : mHistoryFiles) {
+                a = a + b + ", ";
+            }
+
+            Log.d(TAG, String.format("History files in %s: %s", mHistoryFileDirectory.getAbsoluteFile(), a));
         }
 
-        mRecentHistory = new ArrayList<>();
+        if (!mHistoryRecorder) {
+            mRecentHistory = new ArrayList<>();
+        }
 
         // If there are history files, then load the last one.
         if (mCurrentHistoryFileID > 0) {
             mCurrentHistoryFile = new File(mHistoryFileDirectory, mHistoryFiles.get(mHistoryFiles.size() - 1));
-            mCurrentHistory = loadHistoryFile(mCurrentHistoryFile);
+            ArrayList<Location> oldHist = loadHistoryFile(mCurrentHistoryFile);
+            mEntriesInCurrentFile = oldHist.size();
 
-            // Get list of recent location history.
-            i = mCurrentHistory.size();
-            while (i > 0 && mRecentHistory.size() < MAX_RECENT_HISTORY) {
-                --i;
-                mRecentHistory.add(0, mCurrentHistory.get(i));
-            }
-
-            // If we haven't got enough recent history, then get it from the previous history file.
-            if (mRecentHistory.size() < MAX_RECENT_HISTORY && mHistoryFiles.size() > 1) {
-                File oldFile = new File(mHistoryFileDirectory, mHistoryFiles.get(mHistoryFiles.size() - 2));
-                ArrayList<Location> oldHist = loadHistoryFile(oldFile);
-
-                i = oldHist.size();
+            if (!mHistoryRecorder) {
+                // Get list of recent location history.
+                i = mEntriesInCurrentFile;
                 while (i > 0 && mRecentHistory.size() < MAX_RECENT_HISTORY) {
                     --i;
                     mRecentHistory.add(0, oldHist.get(i));
+                }
+                oldHist.clear();
+
+                // If we haven't got enough recent history, then get it from the previous history file.
+                if (mRecentHistory.size() < MAX_RECENT_HISTORY && mHistoryFiles.size() > 1) {
+                    File oldFile = new File(mHistoryFileDirectory, mHistoryFiles.get(mHistoryFiles.size() - 2));
+                    oldHist = loadHistoryFile(oldFile);
+
+                    i = oldHist.size();
+                    while (i > 0 && mRecentHistory.size() < MAX_RECENT_HISTORY) {
+                        --i;
+                        mRecentHistory.add(0, oldHist.get(i));
+                    }
+                    oldHist.clear();
                 }
             }
         } else {
             // Otherwise, set up for the first history file.
             mCurrentHistoryFile = new File(mHistoryFileDirectory, "1");
             mCurrentHistoryFileID = 1;
-            mCurrentHistory = new ArrayList<>();
+            mEntriesInCurrentFile = 0;
         }
 
         mHistoryChanged = false;
@@ -112,27 +138,58 @@ class HistoryManager {
      *
      * @param location location to add.
      */
-    public void recordLocation(Location location) {
-        mRecentHistory.add(location);
-        while (mRecentHistory.size() > MAX_RECENT_HISTORY) {
-            mRecentHistory.remove(0);
+    void recordLocation(Location location) {
+        synchronized (this) {
+            if (!mHistoryRecorder) {
+                mRecentHistory.add(location);
+                while (mRecentHistory.size() > MAX_RECENT_HISTORY) {
+                    mRecentHistory.remove(0);
+                }
+            }
+
+            if (mEntriesInCurrentFile >= mMaxEntriesPerFile) {
+                try {
+                    FileReader fr = new FileReader(mCurrentHistoryFile);
+                    char buf[] = new char[128];
+                    int r;
+                    String s = "";
+                    r = fr.read(buf, 0, 128);
+                    while (r > 0) {
+                        s = s + String.valueOf(buf, 0, r);
+                        r = fr.read(buf, 0, 128);
+                    }
+                    fr.close();
+                    Log.d(TAG, String.format("LAST FILE: %s\n%s", mCurrentHistoryFile.getAbsoluteFile(), s));
+                } catch (FileNotFoundException fnf) {
+                    Log.e(TAG, String.format("File not found: %s", fnf.getMessage()));
+                } catch (IOException io) {
+                    Log.e(TAG, String.format("IO Exception: %s", io.getMessage()));
+                }
+
+                startNewHistoryFile();
+            }
+
+            // Append the location to the history file.
+            try {
+                FileWriter fw = new FileWriter(mCurrentHistoryFile, true);
+                fw.write(location.toString());
+                fw.write("\n");
+                fw.close();
+
+                ++mEntriesInCurrentFile;
+                Log.d(TAG, String.format("Recorded history to %s - %s (Entries: %d)", mCurrentHistoryFile.getAbsoluteFile(), location.toString(), mEntriesInCurrentFile));
+            } catch (FileNotFoundException fnf) {
+                Log.e(TAG, String.format("File not found: %s", fnf.getMessage()));
+            } catch (IOException io) {
+                Log.e(TAG, String.format("IO Exception: %s", io.getMessage()));
+            }
+
         }
-
-        // If the current history is full, save it and start a new one.
-        if (mCurrentHistory.size() >= MAX_HISTORY_ENTRIES_PER_FILE) {
-            // Save the current history.
-            saveHistoryFile(mCurrentHistory, mCurrentHistoryFile);
-
-            // Start a new history file.
-            startNewHistoryFile();
-        }
-
-        mCurrentHistory.add(location);
         mHistoryChanged = true;
     }
 
-    public Location getLastLocation() {
-        if (mRecentHistory.size() > 0) {
+    Location getLastLocation() {
+        if (!mHistoryRecorder && mRecentHistory.size() > 0) {
             return mRecentHistory.get(mRecentHistory.size() - 1);
         } else {
             return null;
@@ -143,29 +200,33 @@ class HistoryManager {
      * Starts a new history file, and deletes old history files.
      */
     private void startNewHistoryFile() {
-        mCurrentHistoryFileID++;
-        mCurrentHistoryFile = new File(mHistoryFileDirectory, String.valueOf(mCurrentHistoryFileID));
-        mCurrentHistory.clear();
+        synchronized (this) {
+            mCurrentHistoryFileID++;
+            mCurrentHistoryFile = new File(mHistoryFileDirectory, String.valueOf(mCurrentHistoryFileID));
+            mEntriesInCurrentFile = 0;
 
-        mHistoryFiles.add(String.valueOf(mCurrentHistoryFileID));
-        while (mHistoryFiles.size() > MAX_HISTORY_FILES) {
-            File fileToDelete = new File(mHistoryFileDirectory, mHistoryFiles.get(0));
-            if (fileToDelete.exists()) {
-                Log.d(TAG, String.format("Deleting history file %s", fileToDelete.getAbsoluteFile()));
-                if (!fileToDelete.delete()) {
-                    Log.w(TAG, String.format("Unable to delete history file %s", fileToDelete));
+            mHistoryFiles.add(String.valueOf(mCurrentHistoryFileID));
+
+            if (!mHistoryRecorder) {
+                while (mHistoryFiles.size() > mMaxHistoryFiles) {
+                    File fileToDelete = new File(mHistoryFileDirectory, mHistoryFiles.get(0));
+                    if (fileToDelete.exists()) {
+                        Log.d(TAG, String.format("Deleting history file %s", fileToDelete.getAbsoluteFile()));
+                        if (!fileToDelete.delete()) {
+                            Log.w(TAG, String.format("Unable to delete history file %s", fileToDelete));
+                        }
+                    }
+
+                    mHistoryFiles.remove(0);
                 }
             }
-
-            mHistoryFiles.remove(0);
         }
-
     }
 
     /**
      * Gets a list of the history files, and loads the history from the last history file.
      */
-    private ArrayList<Location> loadHistoryFile(File file) {
+    ArrayList<Location> loadHistoryFile(File file) {
         ArrayList<Location> locations = new ArrayList<>();
 
         loadHistoryFile(file, locations);
@@ -190,7 +251,7 @@ class HistoryManager {
                     location = new Location(line);
                     locations.add(location);
 
-                    Log.d(TAG, String.format("+++ %s", location.toString()));
+                    //Log.d(TAG, String.format("+++ %s", location.toString()));
                 } catch (ParseException pe) {
                     Log.e(TAG, String.format("Exception parsing location history entry from %s - %s: %s", file.getAbsolutePath(), line, pe.toString()));
                 } catch (IllegalArgumentException ia) {
@@ -205,39 +266,8 @@ class HistoryManager {
         }
     }
 
-    void saveHistory() {
-        saveHistoryFile(mCurrentHistory, mCurrentHistoryFile);
-    }
-
     boolean isHistoryChanged() {
         return mHistoryChanged;
-    }
-
-    private void saveHistoryFile(ArrayList<Location> locations, File file) {
-        Log.d(TAG, String.format("Saving history to file %s", file.getAbsoluteFile()));
-
-        try {
-            if (file.exists() && !file.delete()) {
-                Log.w(TAG, String.format("Failed to delete history file %s", file.getAbsoluteFile()));
-            }
-
-            if (locations != null) {
-                BufferedWriter writer = new BufferedWriter(new FileWriter(file));
-
-                for (Location loc : locations) {
-                    Log.d(TAG, String.format("+++ %s", loc.toString()));
-
-                    writer.write(loc.toString());
-                    writer.newLine();
-                }
-
-                writer.close();
-            }
-
-            mHistoryChanged = false;
-        } catch (IOException io) {
-            Log.e(TAG, String.format("IOException writing location history to %s - %s", file.getAbsoluteFile(), io.toString()));
-        }
     }
 
     void deleteAllHistory() {
@@ -252,5 +282,51 @@ class HistoryManager {
         if (!mHistoryFileDirectory.delete()) {
             Log.w(TAG, String.format("Failed to delete file %s", mCurrentHistoryFile.getAbsoluteFile()));
         }
+    }
+
+    String[] getListOfFilesForUpload() {
+        String[] fileList = null;
+
+        synchronized (this) {
+            if (mHistoryFiles != null) {
+                if (mEntriesInCurrentFile > 0) {
+                    startNewHistoryFile();
+                }
+
+                fileList = new String[mHistoryFiles.size() - 1];
+                // subList(fromIdx (Inclusive), toIdx (Exclusive).
+                mHistoryFiles.subList(0, mHistoryFiles.size() - 1).toArray(fileList);
+            }
+        }
+
+        return fileList;
+    }
+
+    File getFileFor(String fileName) {
+        File file = new File(mHistoryFileDirectory, fileName);
+        if (!file.exists()) {
+            file = null;
+        }
+
+        return file;
+    }
+
+    boolean deleteFile(String fileName) {
+        return deleteFile(getFileFor(fileName));
+    }
+
+    boolean deleteFile(File file) {
+        String fileName = file.getName();
+
+        Log.d(TAG, String.format("Delete file: %s - %s", file.getAbsoluteFile(), fileName));
+        if (mHistoryFiles.contains(fileName)) {
+            mHistoryFiles.remove(fileName);
+        }
+
+        if (file.exists()) {
+            return file.delete();
+        }
+
+        return false;
     }
 }

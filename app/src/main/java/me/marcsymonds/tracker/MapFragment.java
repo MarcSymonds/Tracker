@@ -148,14 +148,14 @@ public class MapFragment
 
     public void onLocationChanged(android.location.Location location) {
         // New location has now been determined
-        String msg = "Updated Location: " +
+        /*String msg = "Updated Location: " +
                 Double.toString(location.getLatitude()) + "," +
-                Double.toString(location.getLongitude());
+                Double.toString(location.getLongitude());*/
 
-        Log.d(TAG, msg);
+        //Log.d(TAG, msg);
 
         if (mMapFragmentActions != null) {
-            Location myLocation = new Location(location); // Convert android.location.Location to Tracker.Location.
+            Location myLocation = new Location(0, location); // Convert android.location.Location to Tracker.Location.
 
             mMapFragmentActions.updateMyLocation(myLocation);
         }

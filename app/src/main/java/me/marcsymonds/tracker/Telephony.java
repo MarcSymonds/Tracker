@@ -1,6 +1,7 @@
 package me.marcsymonds.tracker;
 
 import android.content.Context;
+
 import java.util.ArrayList;
 
 class Telephony {

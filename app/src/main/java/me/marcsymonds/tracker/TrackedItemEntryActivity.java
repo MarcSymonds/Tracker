@@ -2,19 +2,16 @@ package me.marcsymonds.tracker;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.EditTextPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceFragment;
-import android.preference.PreferenceGroup;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
 import android.support.v7.app.ActionBar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.ListAdapter;
 
 public class TrackedItemEntryActivity extends AppCompatPreferenceActivity {
     static final private String TAG = "TrackerItemEntryAct";
@@ -24,49 +21,8 @@ public class TrackedItemEntryActivity extends AppCompatPreferenceActivity {
 
     static final private String KEY_TRACKED_ITEM_DEVICE_TYPE = "tracked_item_device_type";
     static final private String KEY_TRACKED_DEVICE_SETTINGS_GROUP = "device_specific_settings";
-    private static final Preference.OnPreferenceChangeListener sBindPreferenceSummaryToValueListener = new Preference.OnPreferenceChangeListener() {
-        @Override
-        public boolean onPreferenceChange(Preference preference, Object value) {
-            String stringValue = value.toString();
-            if (preference instanceof ListPreference) {
-                // For list preferences, look up the correct display value in
-                // the preference's 'entries' list.
-                ListPreference listPreference = (ListPreference) preference;
-                int index = listPreference.findIndexOfValue(stringValue);
 
-                // Set the summary to reflect the new value.
-                preference.setSummary(index >= 0 ? listPreference.getEntries()[index] : null);
-            } else {
-                // For all other preferences, set the summary to the value's
-                // simple string representation.
-
-                // If the preference key contains the word "password", we'll assume it is a password
-                // and not display the actual value.
-                if (preference.getKey().contains("password") && stringValue != null && !stringValue.isEmpty()) {
-                    stringValue = "********";
-                }
-
-                preference.setSummary(stringValue);
-            }
-
-            // Continue with the change.
-            return true;
-        }
-    };
     private int mTrackedItemID = 0;
-
-    private static void bindPreferenceSummaryToValue(Preference preference) {
-        // Set the listener to watch for value changes.
-        preference.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
-
-        // Trigger the listener immediately with the preference's current value.
-
-        preference.getOnPreferenceChangeListener().onPreferenceChange(preference,
-                preference
-                        .getPreferenceManager()
-                        .getSharedPreferences()
-                        .getString(preference.getKey(), "x"));
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -197,6 +153,8 @@ public class TrackedItemEntryActivity extends AppCompatPreferenceActivity {
     public static class TrackedItemEntryFragment extends PreferenceFragment {
         private final static String TAG = "TrackedItemEntryFrag";
 
+        private final static PreferenceBinder mPreferenceBinder = new PreferenceBinder();
+
         @Override
         public void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
@@ -207,9 +165,11 @@ public class TrackedItemEntryActivity extends AppCompatPreferenceActivity {
 
                 // Add the base "Tracked Item" prefererences to the preferences.
                 addPreferencesFromResource(R.xml.pref_tracked_item_entry);
+
                 // and bind the controls to their summary values, so the user can see the current
                 // value of each preference.
-                bindControls(getPreferenceScreen());
+                // Ignore the tracked item device type, we handle that specially below...
+                mPreferenceBinder.bindControls(getPreferenceScreen(), new String[]{KEY_TRACKED_ITEM_DEVICE_TYPE});
 
                 // The "Device Type" preference needs special attention. If the device type is
                 // changed, then we need to show the preferences for that device type.
@@ -238,7 +198,7 @@ public class TrackedItemEntryActivity extends AppCompatPreferenceActivity {
 
                             // Bind the controls for the device preferences, so that the value of
                             // each preference is shown.
-                            bindControlsForGroup(KEY_TRACKED_DEVICE_SETTINGS_GROUP);
+                            mPreferenceBinder.bindControlsForGroup(getPreferenceScreen(), KEY_TRACKED_DEVICE_SETTINGS_GROUP, null);
 
                             // Acceot the change.
                             return true;
@@ -280,42 +240,6 @@ public class TrackedItemEntryActivity extends AppCompatPreferenceActivity {
             // and add those preferences to the form.
             if (resID > 0) {
                 addPreferencesFromResource(resID);
-            }
-        }
-
-        private void bindControls(PreferenceScreen preferenceScreen) {
-            // Bind the summaries of EditText/List/Dialog/Ringtone preferences
-            // to their values. When their values change, their summaries are
-            // updated to reflect the new value, per the Android Design
-            // guidelines.
-
-            ListAdapter l = preferenceScreen.getRootAdapter();
-
-            int prefCount = l.getCount();
-            for (int i = 0; i < prefCount; i++) {
-                bindControl(l.getItem(i));
-            }
-        }
-
-        private void bindControlsForGroup(String prefGroupName) {
-            PreferenceGroup pg = (PreferenceGroup) findPreference(prefGroupName);
-            if (pg != null) {
-                int prefs = pg.getPreferenceCount();
-                for (int i = 0; i < prefs; i++) {
-                    bindControl(pg.getPreference(i));
-                }
-            }
-        }
-
-        private void bindControl(Object obj) {
-            if (obj instanceof EditTextPreference) {
-                bindPreferenceSummaryToValue((Preference) obj);
-            } else if (obj instanceof ListPreference) {
-                ListPreference lp = (ListPreference) obj;
-                // The "device type" preference is handled specially elsewhere (above).
-                if (!lp.getKey().equals(KEY_TRACKED_ITEM_DEVICE_TYPE)) {
-                    bindPreferenceSummaryToValue(lp);
-                }
             }
         }
     }

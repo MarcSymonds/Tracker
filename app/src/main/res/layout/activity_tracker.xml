@@ -27,20 +27,20 @@
         android:layout_height="56dp"
         android:gravity="center_vertical|start"
         android:orientation="horizontal"
-        android:paddingLeft="8dp"
-        android:paddingStart="8dp"
         android:paddingEnd="8dp"
-        android:paddingRight="8dp">
+        android:paddingLeft="8dp"
+        android:paddingRight="8dp"
+        android:paddingStart="8dp">
 
         <ImageButton
             android:id="@+id/butMyLocation"
             android:layout_width="50dp"
             android:layout_height="50dp"
+            android:contentDescription="@string/follow_my_location"
             android:maxWidth="50dp"
             android:onClick="myLocationButtonClick"
             android:padding="6dp"
             android:scaleType="fitCenter"
-            android:contentDescription="@string/follow_my_location"
             app:srcCompat="@drawable/img_my_location_off" />
 
         <LinearLayout
@@ -56,7 +56,48 @@
         android:id="@+id/activityTrackerMap"
         android:name="me.marcsymonds.tracker.MapFragment"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="0.5"
         tools:layout="@layout/fragment_map" />
+
+    <LinearLayout
+        android:id="@+id/progressBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#660000"
+        android:orientation="horizontal"
+        android:paddingBottom="0dp"
+        android:paddingEnd="16dp"
+        android:paddingStart="16dp"
+        android:paddingTop="0dp"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/progressBarText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/app_name"
+            android:textColor="#FFFFFF" />
+
+        <ProgressBar
+            android:id="@+id/progressBarProgress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:max="50"
+            android:paddingEnd="16dp"
+            android:paddingLeft="5dp"
+            android:paddingRight="16dp"
+            android:paddingStart="5dp"
+            android:progress="25" />
+
+        <Button
+            android:id="@+id/progressBarCancelButton"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:foreground="@android:drawable/ic_menu_close_clear_cancel" />
+    </LinearLayout>
 
 </LinearLayout>

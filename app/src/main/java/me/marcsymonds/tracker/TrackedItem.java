@@ -20,21 +20,29 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Locale;
+import java.util.UUID;
 
 public class TrackedItem {
-    final static String TI_COLOUR = "tracked_item_colour";
-    final static String TI_TYPE = "tracked_item_device_type";
+    private final static String TI_COLOUR = "tracked_item_colour";
+    private final static String TI_TYPE = "tracked_item_device_type";
     final static private String TI_ID = "id";
+    final static private String TI_GUID = "guid";
     // These values must match the android:key values in the pref_tracked_item_entry.xml file.
     // These values are also used when saving the record to file.
     final static private String TI_NAME = "tracked_item_name";
     final static private String TI_ENABLED = "tracked_item_enabled";
     final private String TAG = "TrackedItem";
+
     private int mID = 0;
+    private String mGUID = "";
 
     private boolean mEnabled = false;
     private String mName = "";
-    private int mColour = 0; // Colour is used for the map marker. The map uses hues for colouring, so this value is the hue (0-359) and is converted to an actual colour where needed.
+
+    // Colour is used for the map marker. The map uses hues for colouring, so this value is the
+    // hue (0-359) and is converted to an actual colour where needed.
+    private int mColour = 0;
+
     private String mTrackerDeviceType = "";
     private TrackerDevice mTrackerDevice = null;
     private File mSaveFile = null;
@@ -48,6 +56,7 @@ public class TrackedItem {
     private int mNumberOfResponsesReceived = 0;
     TrackedItem() {
         mID = TrackedItems.getNextID();
+        mGUID = UUID.randomUUID().toString();
         setHistory();
     }
 
@@ -77,6 +86,10 @@ public class TrackedItem {
                 switch (name) {
                     case TI_ID:
                         mID = Integer.parseInt(value);
+                        break;
+
+                    case TI_GUID:
+                        mGUID = value;
                         break;
 
                     case TI_NAME:
@@ -156,6 +169,8 @@ public class TrackedItem {
 
             writer.write(TI_ID + ":" + mID);
             writer.newLine();
+            writer.write(TI_GUID + ":" + mGUID);
+            writer.newLine();
             writer.write(TI_NAME + ":" + mName);
             writer.newLine();
             writer.write(TI_ENABLED + ":" + (mEnabled ? "1" : "0"));
@@ -172,16 +187,16 @@ public class TrackedItem {
             writer.flush();
             writer.close();
 
-            /*BufferedReader r = new BufferedReader(new FileReader(file));
+            /*BufferedReader r = new BufferedReader(new FileReader(mSaveFile));
             String t = "";
             String l;
             l = r.readLine();
             while (l != null) {
-                t = t + l;
+                t = t + l + ", ";
                 l = r.readLine();
             }
             r.close();
-            Log.v(TAG, String.format("Saved data for %s : %s", file.getAbsolutePath(), t));*/
+            Log.v(TAG, String.format("Saved data for %s : %s", mSaveFile.getAbsolutePath(), t));*/
         }
         catch (IOException io) {
             Log.e(TAG, String.format("IOException writing file %s - %s", mSaveFile.getAbsolutePath(), io.toString()));
@@ -294,6 +309,15 @@ public class TrackedItem {
         return mID;
     }
 
+    String getGUID() {
+        /*if (mGUID.length() == 0) {
+            mGUID = UUID.randomUUID().toString();
+            saveToFile();
+        }*/
+
+        return mGUID;
+    }
+
     String getName() {
         return mName;
     }
@@ -383,7 +407,7 @@ public class TrackedItem {
         }
     }
 
-    public void sendPing(Activity activity) {
+    void sendPing(Activity activity) {
         if (mTrackerDevice != null) {
             mTrackerDevice.pingDevice(activity, this);
         }
@@ -394,6 +418,7 @@ public class TrackedItem {
         Log.d(TAG, String.format("New location for %s - %s", mName, location.toString()));
 
         mHistory.recordLocation(location);
+        HistoryRecorder.recordHistory(location);
 
         //++mNumberOfResponsesReceived;
         //if (mNumberOfResponsesReceived >= mNumberOfResponses) {
@@ -411,12 +436,6 @@ public class TrackedItem {
     void deleteHistory() {
         if (mHistory != null) {
             mHistory.deleteAllHistory();
-        }
-    }
-
-    void saveHistory() {
-        if (mHistory != null) {
-            mHistory.saveHistory();
         }
     }
 }

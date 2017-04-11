@@ -7,10 +7,10 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.os.Build;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -31,11 +31,10 @@ public class TrackedItemListActivity extends AppCompatActivity {
     private final String TAG = "TrackedItemListActivity";
 
     private final int TRACKED_ITEM_ADD_UPDATE_REQUEST = 1;
-
+    private final ArrayList<Integer> mSelectedList = new ArrayList<>();
     private boolean mSelectMode = false;
     private Menu mOptionsMenu = null;
     private CharSequence mOptionsMenuTitle;
-    private final ArrayList<Integer> mSelectedList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,7 +91,7 @@ public class TrackedItemListActivity extends AppCompatActivity {
 
     private void setUpActionBar() {
         ActionBar actionBar = getSupportActionBar();
-        Log.d(TAG, String.format("setUpActionBar: %s", actionBar == null ? "NULL" : "NOT NULL"));
+
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
             mOptionsMenuTitle = actionBar.getTitle();

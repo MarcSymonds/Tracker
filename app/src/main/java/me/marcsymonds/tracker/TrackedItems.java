@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Locale;
 
+import static android.content.Context.MODE_PRIVATE;
+
 /**
  * Used for managing the list of tracked items.
  */
@@ -28,8 +30,8 @@ class TrackedItems {
     private static String[] mTrackerDeviceClasses = null;
 
     static void initialise(Activity activity) {
-        mTrackedItemsSaveDir = activity.getDir(TRACKED_ITEMS_DIR, 0);
-        mTrackedItemsHistoryDir = activity.getDir(TRACKED_ITEMS_HISTORY_DIR, 0);
+        mTrackedItemsSaveDir = activity.getDir(TRACKED_ITEMS_DIR, MODE_PRIVATE);
+        mTrackedItemsHistoryDir = activity.getDir(TRACKED_ITEMS_HISTORY_DIR, MODE_PRIVATE);
 
         mTrackerDeviceNames = activity.getResources().getStringArray(R.array.tracker_device_codes);
         mTrackerDeviceClasses = activity.getResources().getStringArray(R.array.tracker_device_classes);

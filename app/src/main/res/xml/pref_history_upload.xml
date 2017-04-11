@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <EditTextPreference
+        android:hint="@string/pref_upload_history_url_hint"
+        android:key="history_upload_local_url"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pref_upload_history_local_url" />
+    <EditTextPreference
+        android:hint="@string/pref_upload_history_url_hint"
+        android:key="history_upload_remote_url"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pref_upload_history_remote_url" />
+</PreferenceScreen>
