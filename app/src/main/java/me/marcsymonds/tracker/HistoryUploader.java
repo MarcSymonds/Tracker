@@ -3,6 +3,7 @@ package me.marcsymonds.tracker;
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -44,15 +45,19 @@ class HistoryUploader extends AsyncTask<String, Integer, HistoryUploaderState> i
     private static final String URL_PING = "api/Ping";
     private static final String URL_TRACKER_HISTORY = "api/TrackerHistory";
 
-    private static final int HU_NO_URLS = -1;
-    private static final int HU_CANNOT_PING = -2;
-    private static final int HU_CANCELLED = -3;
-    private static final int HU_SUCCESS = -4;
-    private static final int HU_FAIL = -9;
+    private static final SimpleDateFormat mXmlDateFormatter;
 
-    // The single quotes mean output the T as-is. The quotes are not output.
-    // The XXX means output timezone as [+-]HH:MM
-    private final SimpleDateFormat mXmlDateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+    static {
+        // The single quotes mean output the T as-is. The quotes are not output.
+        // The XXX means output timezone as [+-]HH:MM
+        // Older APIs (Acer B1) don't recognise the XXX.
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN) {
+            mXmlDateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
+        } else {
+            mXmlDateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        }
+    }
+
     private final DocumentBuilderFactory mDocumentBuilderFactory = DocumentBuilderFactory.newInstance();
     private final String mAppID;
     private final String mLocalURL;
