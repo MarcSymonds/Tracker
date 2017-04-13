@@ -50,10 +50,7 @@ public class TrackedItem {
     private HistoryManager mHistory;
     private TrackedItemButton mButton = null;
     private Marker mMapMarker = null;
-    private boolean mSentPingRequest = false;
 
-    // Control data for tracked item.
-    private int mNumberOfResponsesReceived = 0;
     TrackedItem() {
         mID = TrackedItems.getNextID();
         mGUID = UUID.randomUUID().toString();
@@ -425,12 +422,15 @@ public class TrackedItem {
         //setPingingButtonState(false);
         //}
 
-        LocalBroadcastManager lbm = LocalBroadcastManager.getInstance(context);
-        Intent event = new Intent("TRACKER-EVENT");
-        event.putExtra("EVENT", "TRACKED-ITEM-LOCATION-UPDATE");
-        event.putExtra("TRACKED-ITEM", mID);
-        event.putExtra("LOCATION", location.toString());
-        lbm.sendBroadcast(event);
+        // Only update the location if there is a location. It may just have been a message.
+        if (location.hasLocation() || location.hasLastKnownLocation()) {
+            LocalBroadcastManager lbm = LocalBroadcastManager.getInstance(context);
+            Intent event = new Intent("TRACKER-EVENT");
+            event.putExtra("EVENT", "TRACKED-ITEM-LOCATION-UPDATE");
+            event.putExtra("TRACKED-ITEM", mID);
+            event.putExtra("LOCATION", location.toString());
+            lbm.sendBroadcast(event);
+        }
     }
 
     void deleteHistory() {

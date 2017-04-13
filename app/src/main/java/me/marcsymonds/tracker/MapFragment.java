@@ -27,7 +27,6 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
-import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
@@ -167,10 +166,8 @@ public class MapFragment
 
     public void centerMap(Location loc, float zoom) {
         if (loc != null) {
-            LatLng latLng = loc.getLatLng();
-
             CameraPosition.Builder cpb = CameraPosition.builder();
-            cpb.target(latLng);
+            cpb.target(loc.getLatLng());
             cpb.zoom(zoom >= 0 ? zoom : mMap.getCameraPosition().zoom);
 
             CameraUpdate cu = CameraUpdateFactory.newCameraPosition(cpb.build());

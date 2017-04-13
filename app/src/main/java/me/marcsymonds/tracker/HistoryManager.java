@@ -26,6 +26,7 @@ class HistoryManager {
     private int mCurrentHistoryFileID; // ID of the Current/Last history file.
     private int mEntriesInCurrentFile = 0;
     private ArrayList<Location> mRecentHistory;
+    private Location mLastRecordedLocation;
     private boolean mHistoryChanged;
     private int mMaxHistoryFiles = MAX_HISTORY_FILES;
     private int mMaxEntriesPerFile = MAX_HISTORY_ENTRIES_PER_FILE;
@@ -63,22 +64,25 @@ class HistoryManager {
         mHistoryFiles = new ArrayList<>();
         mCurrentHistoryFileID = 0;
 
-        for (File file : mHistoryFileDirectory.listFiles()) {
-            histID = Integer.parseInt(file.getName());
+        File[] historyFiles = mHistoryFileDirectory.listFiles();
+        if (historyFiles != null) {
+            for (File file : historyFiles) {
+                histID = Integer.parseInt(file.getName());
 
-            // Could use .sort, but that requires later API.
+                // Could use .sort, but that requires later API.
 
-            if (mHistoryFiles.size() == 0 || histID > mCurrentHistoryFileID) {
-                mHistoryFiles.add(file.getName());
-                mCurrentHistoryFileID = histID;
-            } else if (histID < Integer.parseInt(mHistoryFiles.get(0))) {
-                mHistoryFiles.add(0, file.getName());
-            } else {
-                i = 1;
-                while (histID > Integer.parseInt(mHistoryFiles.get(i))) {
-                    ++i;
+                if (mHistoryFiles.size() == 0 || histID > mCurrentHistoryFileID) {
+                    mHistoryFiles.add(file.getName());
+                    mCurrentHistoryFileID = histID;
+                } else if (histID < Integer.parseInt(mHistoryFiles.get(0))) {
+                    mHistoryFiles.add(0, file.getName());
+                } else {
+                    i = 1;
+                    while (histID > Integer.parseInt(mHistoryFiles.get(i))) {
+                        ++i;
+                    }
+                    mHistoryFiles.add(i, file.getName());
                 }
-                mHistoryFiles.add(i, file.getName());
             }
         }
 
@@ -95,30 +99,63 @@ class HistoryManager {
             mRecentHistory = new ArrayList<>();
         }
 
+        mLastRecordedLocation = null;
+
         // If there are history files, then load the last one.
         if (mCurrentHistoryFileID > 0) {
             mCurrentHistoryFile = new File(mHistoryFileDirectory, mHistoryFiles.get(mHistoryFiles.size() - 1));
             ArrayList<Location> oldHist = loadHistoryFile(mCurrentHistoryFile);
+            Location oldHistLoc;
             mEntriesInCurrentFile = oldHist.size();
 
             if (!mHistoryRecorder) {
                 // Get list of recent location history.
-                i = mEntriesInCurrentFile;
-                while (i > 0 && mRecentHistory.size() < MAX_RECENT_HISTORY) {
+                i = mEntriesInCurrentFile - 1;
+                int recHistorySize = 0;
+                while (i >= 0 && (mLastRecordedLocation == null || recHistorySize < MAX_RECENT_HISTORY)) {
+                    oldHistLoc = oldHist.get(i);
+
+                    if (recHistorySize < MAX_RECENT_HISTORY) {
+                        mRecentHistory.add(0, oldHistLoc);
+                        ++recHistorySize;
+                    }
+
+                    if (mLastRecordedLocation == null) {
+                        if (oldHistLoc.hasLocation() || oldHistLoc.hasLastKnownLocation()) {
+                            mLastRecordedLocation = oldHistLoc;
+                        }
+                    }
+
                     --i;
-                    mRecentHistory.add(0, oldHist.get(i));
                 }
                 oldHist.clear();
 
                 // If we haven't got enough recent history, then get it from the previous history file.
-                if (mRecentHistory.size() < MAX_RECENT_HISTORY && mHistoryFiles.size() > 1) {
-                    File oldFile = new File(mHistoryFileDirectory, mHistoryFiles.get(mHistoryFiles.size() - 2));
-                    oldHist = loadHistoryFile(oldFile);
+                if ((mLastRecordedLocation == null || recHistorySize < MAX_RECENT_HISTORY)) {
+                    int histFileIdx = mHistoryFiles.size() - 2;
+                    while (histFileIdx >= 0) {
+                        File oldFile = new File(mHistoryFileDirectory, mHistoryFiles.get(histFileIdx));
+                        oldHist = loadHistoryFile(oldFile);
 
-                    i = oldHist.size();
-                    while (i > 0 && mRecentHistory.size() < MAX_RECENT_HISTORY) {
-                        --i;
-                        mRecentHistory.add(0, oldHist.get(i));
+                        i = oldHist.size() - 1;
+                        while (i > 0 && (mLastRecordedLocation == null || recHistorySize < MAX_RECENT_HISTORY)) {
+                            oldHistLoc = oldHist.get(i);
+
+                            if (recHistorySize < MAX_RECENT_HISTORY) {
+                                mRecentHistory.add(0, oldHistLoc);
+                                ++recHistorySize;
+                            }
+
+                            if (mLastRecordedLocation == null) {
+                                if (oldHistLoc.hasLocation() || oldHistLoc.hasLastKnownLocation()) {
+                                    mLastRecordedLocation = oldHistLoc;
+                                }
+                            }
+
+                            --i;
+                        }
+
+                        --histFileIdx;
                     }
                     oldHist.clear();
                 }
@@ -144,6 +181,10 @@ class HistoryManager {
                 mRecentHistory.add(location);
                 while (mRecentHistory.size() > MAX_RECENT_HISTORY) {
                     mRecentHistory.remove(0);
+                }
+
+                if (location.hasLocation() || location.hasLastKnownLocation()) {
+                    mLastRecordedLocation = location;
                 }
             }
 
@@ -189,11 +230,7 @@ class HistoryManager {
     }
 
     Location getLastLocation() {
-        if (!mHistoryRecorder && mRecentHistory.size() > 0) {
-            return mRecentHistory.get(mRecentHistory.size() - 1);
-        } else {
-            return null;
-        }
+        return mLastRecordedLocation;
     }
 
     /**

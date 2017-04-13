@@ -1,0 +1,7 @@
+[message]?
+[[Lac: 12ab 34cd]?
+[lat:12.3456
+long:21.6543]
+*
+http://maps.google.com/maps*&q=12.3456,21.6543&z=<zoom>
+]

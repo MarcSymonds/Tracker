@@ -2,6 +2,9 @@ package me.marcsymonds.tracker;
 
 import org.junit.Test;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -25,4 +28,24 @@ public class ExampleUnitTest {
         assertTrue(String.format("Distance = %f", d), d <= 1.0);
     }
 
+    @Test
+    public void testMessageParsing() throws Exception {
+        String msgIn = "sensor alarm!\\n" +
+                "lat:48.404748\\n" +
+                "long:1.506225\\n" +
+                "speed:0.0\\n" +
+                "T:17/02/26 19:12\\n" +
+                "http://maps.google.com/maps?f=q&q=48.404748,1.506225&z=16\\n" +
+                "Pwr: ON Door: OFF ACC: OFF\\n";
+
+        // DOTALL means the dot (.) will match new-line characters.
+        Pattern pat = Pattern.compile("^(([^\\n]*)\\n)?(lac:|lat:)?", Pattern.MULTILINE + Pattern.CASE_INSENSITIVE + Pattern.DOTALL);
+        Matcher mtch = pat.matcher(msgIn);
+
+        //Pattern pat = Pattern.compile("Lac:.*http://.*q=(-?[0-9\\.]*),(-?[0-9\\.]*)", Pattern.MULTILINE + Pattern.CASE_INSENSITIVE + Pattern.DOTALL);
+
+        if (mtch.find()) {
+            //Log.d("TEST", mtch.group());
+        }
+    }
 }

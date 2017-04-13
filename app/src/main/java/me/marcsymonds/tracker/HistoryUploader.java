@@ -379,7 +379,7 @@ class HistoryUploader extends AsyncTask<String, Integer, HistoryUploaderState> i
         boolean started = false;
 
         Element trackerDeviceNode = null;
-        Element historyNode;
+        Element historyNode, additionalNode;
 
         for (Location location : locations) {
             if (location.getDevice() != currentTrackerDeviceID) {
@@ -403,9 +403,35 @@ class HistoryUploader extends AsyncTask<String, Integer, HistoryUploaderState> i
 
             historyNode = doc.createElement("History");
             historyNode.setAttribute("whenRecorded", mXmlDateFormatter.format(location.getDateTime()));
-            historyNode.setAttribute("latitude", Double.toString(location.getLatitude()));
-            historyNode.setAttribute("longitude", Double.toString(location.getLongitude()));
-            historyNode.setAttribute("isGps", location.isGPS() ? "true" : "false");
+
+            if (location.hasLocation()) {
+                historyNode.setAttribute("latitude", Double.toString(location.getLatitude()));
+                historyNode.setAttribute("longitude", Double.toString(location.getLongitude()));
+                historyNode.setAttribute("isGps", location.isGPS() ? "true" : "false");
+            }
+
+            if (location.hasAdditionalInfo()) {
+                additionalNode = doc.createElement("Additional");
+
+                if (location.getLAC() != null) {
+                    additionalNode.setAttribute("lac", location.getLAC());
+                }
+
+                if (location.getCID() != null) {
+                    additionalNode.setAttribute("cid", location.getCID());
+                }
+
+                if (location.getMessage() != null) {
+                    additionalNode.setAttribute("message", location.getMessage());
+                }
+
+                if (location.hasLastKnownLocation()) {
+                    additionalNode.setAttribute("lastKnownLatitude", Double.toString(location.getLastKnownLatitude()));
+                    additionalNode.setAttribute("lastKnownLongitude", Double.toString(location.getLastKnownLongitude()));
+                }
+
+                historyNode.appendChild(additionalNode);
+            }
 
             trackerDeviceNode.appendChild(historyNode);
         }

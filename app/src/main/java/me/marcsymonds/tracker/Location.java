@@ -13,18 +13,25 @@ import java.util.Locale;
 
 class Location {
     private final static String TAG = "Location";
+
     private static final double EARTH_RADIUS_KM = 6371;
+
     private int mDevice;
     private Date mDateTime;
-    private double mLatitude;
-    private double mLongitude;
-    private boolean mGPS;
+    private double mLatitude = 0.0;
+    private double mLongitude = 0.0;
+    private boolean mGPS = false;
+    private String mLAC = null;
+    private String mCID = null;
+    private Double mLastKnownLatitude = 0.0;
+    private Double mLastKnownLongitude = 0.0;
+    private String mMessage = null;
 
     Location () {
     }
 
     Location(String savedData) throws ParseException, IllegalArgumentException {
-        String[] values = savedData.split("\\|");
+        String[] values = savedData.split("\\|", -1); // -1 otherwise split will discard empty strings at end.
         int idx = 0;
 
         //Log.d(TAG, String.format("Parsing location data: %s", savedData));
@@ -32,19 +39,25 @@ class Location {
         if (values.length < 4)
             throw new IllegalArgumentException(String.format("Invalid Location data: %s", savedData));
 
-        if (values.length == 5) {
-            mDevice = Integer.parseInt(values[idx]);
-            ++idx;
+        if (values.length >= 5) {
+            mDevice = Integer.parseInt(values[idx++]);
         }
 
-        mDateTime = SimpleDateFormat.getDateTimeInstance().parse(values[idx]);
-        ++idx;
-        mLatitude = Double.parseDouble(values[idx]);
-        ++idx;
-        mLongitude = Double.parseDouble(values[idx]);
-        ++idx;
-        mGPS = (values[idx].equals("1"));
-        ++idx;
+        mDateTime = SimpleDateFormat.getDateTimeInstance().parse(values[idx++]);
+        mLatitude = Double.parseDouble(values[idx++]);
+        mLongitude = Double.parseDouble(values[idx++]);
+        mGPS = (values[idx++].equals("1"));
+
+        if (idx < values.length) {
+            mLAC = values[idx].length() == 0 ? null : values[idx];
+            ++idx;
+            mCID = values[idx].length() == 0 ? null : values[idx];
+            ++idx;
+            mLastKnownLatitude = Double.parseDouble(values[idx++]);
+            mLastKnownLongitude = Double.parseDouble(values[idx++]);
+            mMessage = values[idx].length() == 0 ? null : values[idx];
+            ++idx;
+        }
     }
 
     Location(int device, double latitude, double longitude, boolean gps) {
@@ -63,15 +76,47 @@ class Location {
         this(device, location.getLatitude(), location.getLongitude(), (location.getAccuracy() > 0.0 && location.getAccuracy() < 5.0)); // If accuracy within 5 meters, assume GPS.
     }
 
+    Location(int device) {
+        mDevice = device;
+        mDateTime = Calendar.getInstance().getTime();
+    }
+
+    /**
+     * This is used to save the data to file, so needs to include everything that needs to be saved.
+     *
+     * @return
+     */
     public String toString() {
-        return String.format(Locale.getDefault(), "%d|%s|%f|%f|%d",
+        return String.format(Locale.getDefault(), "%d|%s|%f|%f|%d|%s|%s|%f|%f|%s",
                 mDevice,
                 SimpleDateFormat.getDateTimeInstance().format(mDateTime),
                 mLatitude,
                 mLongitude,
-                mGPS ? 1 : 0);
+                mGPS ? 1 : 0,
+                mLAC == null ? "" : mLAC,
+                mCID == null ? "" : mCID,
+                mLastKnownLatitude,
+                mLastKnownLongitude,
+                mMessage == null ? "" : mMessage);
     }
 
+    boolean hasLocation() {
+        return mLongitude != 0.0 || mLatitude != 0.0;
+    }
+
+    boolean hasLastKnownLocation() {
+        return (mLastKnownLongitude != 0.0 && mLastKnownLongitude != mLongitude)
+                || (mLastKnownLatitude != 0.0 && mLastKnownLatitude != mLatitude);
+    }
+
+    boolean hasAdditionalInfo() {
+        return
+                mLAC != null
+                        || mCID != null
+                        || (mLastKnownLatitude != 0.0 && mLastKnownLatitude != mLatitude)
+                        || (mLastKnownLongitude != 0.0 && mLastKnownLongitude != mLongitude)
+                        || mMessage != null;
+    }
     /**
      * Generates the snippet text to be shown in the Map Marker info window.
      *
@@ -80,7 +125,13 @@ class Location {
     String snippetText() {
         String dt = SimpleDateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(mDateTime);
 
-        return String.format(Locale.getDefault(), "%s\n%f, %f", dt, mLatitude, mLongitude);
+        if (hasLocation()) {
+            return String.format(Locale.getDefault(), "%s\n%f, %f", dt, mLatitude, mLongitude);
+        } else if (hasLastKnownLocation()) {
+            return String.format(Locale.getDefault(), "%s\n%f, %f", dt, mLastKnownLatitude, mLastKnownLongitude);
+        } else {
+            return String.format(Locale.getDefault(), "%s", dt);
+        }
     }
 
     int getDevice() {
@@ -95,20 +146,51 @@ class Location {
         mDateTime = dateTime;
     }
 
-    double getLongitude() {
-        return mLongitude;
+    void setLocation(double latitude, double longitude) {
+        mLongitude = longitude;
+        mLatitude = latitude;
     }
 
-    void setLongitude(double longitude) {
-        mLongitude = longitude;
+    double getLongitude() {
+        return mLongitude;
     }
 
     double getLatitude() {
         return mLatitude;
     }
 
-    void setLatitude(double latitude) {
-        mLatitude = latitude;
+    void setLastKnownLocation(double latitiude, double longitude) {
+        mLastKnownLongitude = longitude;
+        mLastKnownLatitude = latitiude;
+    }
+
+    double getLastKnownLongitude() {
+        return mLastKnownLongitude;
+    }
+
+    double getLastKnownLatitude() {
+        return mLastKnownLatitude;
+    }
+
+    void setLACCID(String lac, String cid) {
+        mLAC = lac;
+        mCID = cid;
+    }
+
+    String getLAC() {
+        return mLAC;
+    }
+
+    String getCID() {
+        return mCID;
+    }
+
+    String getMessage() {
+        return mMessage;
+    }
+
+    void setMessage(String message) {
+        mMessage = message.replace("|", "!");
     }
 
     boolean isGPS() {
@@ -120,7 +202,11 @@ class Location {
     }
 
     LatLng getLatLng() {
-        return new LatLng(mLatitude, mLongitude);
+        if (hasLocation()) {
+            return new LatLng(mLatitude, mLongitude);
+        } else {
+            return new LatLng(mLastKnownLatitude, mLastKnownLongitude);
+        }
     }
 
     /**

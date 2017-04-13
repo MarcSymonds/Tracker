@@ -238,62 +238,106 @@ class TK103AB extends TrackerDevice implements ITrackerDevice {
         boolean handled = false;
 
         if (isMessageFor(source)) {
-                    /*
-        Response from TK103A may be one of two message formats, depending on whether the device
-        has got GPS service:-
+            /*
+            Response from TK103A may be one of two message formats, depending on whether the device
+            has got GPS service:-
 
-            Lac:544c 54b5  <-- Current GSM/Cellular coordinates.
-            T:14/01/01 01:13
-            Last:
-            T:03:47
-            http://maps.google.com/maps?f=q&q=51.405690,0.906240&z=16  <-- Last known GPS coordinates.
+            [message]?
+            [[Lac: 12ab 34cd]?
+            [lat:12.3456
+            long:21.6543]
+            *
+            http://maps.google.com/maps*&q=12.3456,21.6543&z=<zoom>
+            ]?
 
-        or
+            an optional message,
+            possibly followed by a "Lac:", or a "lat:" and "long:"
+            and possibly further down a URL containing the last known GPS coords
 
-            lat:51.504748
-            long:0.906225
-            speed:0.0
-            T:17/02/26 19:12
-            http://maps.google.com/maps?f=q&q=51.405690,0.906240&z=16
-            Pwr: ON Door: OFF ACC: OFF
-        */
+                sensor alarm!
+                Lac:234c 12b5  <-- Current GSM/Cellular coordinates.
+                T:14/01/01 01:13
+                Last:
+                T:03:47
+                http://maps.google.com/maps?f=q&q=48.405690,1.506240&z=16  <-- Last known GPS coordinates.
 
-        /*
-            This format means the tracker does not have GPS coordinates, so it is reporting the
-            Location Area Code (LAC) and Cell ID (CID) of the tower it is connected to. The message
-            also contains the last known GPS coordinates as part of a HTML link. So we will use the
-            GPS coordinates from the HTML link as the location in this instance.
+            or
+
+                sensor alarm!
+                lat:48.404748
+                long:1.506225
+                speed:0.0
+                T:17/02/26 19:12
+                http://maps.google.com/maps?f=q&q=48.404748,1.506225&z=16
+                Pwr: ON Door: OFF ACC: OFF
+
+            When "Lac:" is sent, This format means the tracker does not have GPS coordinates, so it
+            is reporting the Location Area Code (LAC) and Cell ID (CID) of the tower it is connected
+            to. The message also contains the last known GPS coordinates as part of a HTML link.
+            So we will use the GPS coordinates from the HTML link as the location in this instance.
 
             TODO: Possible lookup LAC/CID. Somehow.
-         */
 
-            // DOTALL means the dot (.) will match new-line characters.
-            Pattern pat = Pattern.compile("Lac:.*http://.*q=(-?[0-9\\.]*),(-?[0-9\\.]*)", Pattern.MULTILINE + Pattern.CASE_INSENSITIVE + Pattern.DOTALL);
-            Matcher mtch = pat.matcher(message);
+            DOTALL means the dot (.) will match new-line characters.
+            */
 
+            Location location = new Location(trackedItem.getID());
+
+            Pattern pat;
+            Matcher mtch;
             boolean found = false;
-            double lat = 0, lng = 0;
-            boolean gps = false;
+            boolean possibleMsg = true;
 
+            pat = Pattern.compile("Lac:(\\p{XDigit}+) (\\p{XDigit}+)", Pattern.CASE_INSENSITIVE);
+            mtch = pat.matcher(message);
             if (mtch.find()) {
-                lat = Double.parseDouble(mtch.group(1));
-                lng = Double.parseDouble(mtch.group(2));
+                location.setLACCID(mtch.group(1), mtch.group(2));
+
+                if (mtch.start() == 0) {
+                    possibleMsg = false;
+                }
 
                 found = true;
-            } else {
-                pat = Pattern.compile("lat:\\s*(-?[0-9\\.]*)\\s*long:\\s*(-?[0-9\\.]*)", Pattern.MULTILINE + Pattern.CASE_INSENSITIVE + Pattern.DOTALL);
-                mtch = pat.matcher(message);
+            }
 
+            pat = Pattern.compile("lat:(-?[0-9\\.]+)\\nlong:(-?[0-9\\.]+)", Pattern.CASE_INSENSITIVE);
+            mtch = pat.matcher(message);
+            if (mtch.find()) {
+                location.setLocation(Double.parseDouble(mtch.group(1)), Double.parseDouble(mtch.group(2)));
+                location.setGPS(true);
+
+                if (mtch.start() == 0) {
+                    possibleMsg = false;
+                }
+
+                found = true;
+            }
+
+            // Don't bother getting the location from the link in the message, if we already have
+            // the coordinates.
+            if (!location.hasLocation()) {
+                pat = Pattern.compile("http://.*q=(-?[0-9\\\\.]+),(-?[0-9\\\\.]+)", Pattern.CASE_INSENSITIVE);
+                mtch = pat.matcher(message);
                 if (mtch.find()) {
-                    lat = Double.parseDouble(mtch.group(1));
-                    lng = Double.parseDouble(mtch.group(2));
-                    gps = true;
+                    location.setLastKnownLocation(Double.parseDouble(mtch.group(1)), Double.parseDouble(mtch.group(2)));
+
                     found = true;
                 }
             }
 
+            // There is possibly a message at the start of the SMS message, so extract that.
+            if (possibleMsg) {
+                pat = Pattern.compile("^([^\\n]+)");
+                mtch = pat.matcher(message);
+                if (mtch.find()) {
+                    location.setMessage(mtch.group(1));
+                }
+
+                found = true;
+            }
+
             if (found) {
-                trackedItem.newLocationReceived(context, new Location(trackedItem.getID(), lat, lng, gps));
+                trackedItem.newLocationReceived(context, location);
 
                 if (mPinged) {
                     mPingResponsesReceived++;
@@ -318,6 +362,14 @@ class TK103AB extends TrackerDevice implements ITrackerDevice {
     @Override
     public String getTelephoneNumber() {
         return mTelephoneNumber;
+    }
+
+    public void setTelephoneNumber(String telephoneNumber) {
+        mTelephoneNumber = telephoneNumber;
+    }
+
+    public void setTelephoneCountryCode(String telephoneCountryCode) {
+        mTelephoneCountryCode = telephoneCountryCode;
     }
 
     private String addPasswordToCommand(String command) {

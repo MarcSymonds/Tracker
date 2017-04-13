@@ -27,7 +27,9 @@ class HistoryRecorder {
     }
 
     static synchronized void recordHistory(Location location) {
-        mHistoryManager.recordLocation(location);
+        if (mHistoryManager != null) {
+            mHistoryManager.recordLocation(location);
+        }
     }
 
     static HistoryManager getHistoryManager() {
