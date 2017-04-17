@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -17,6 +16,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -55,6 +55,7 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
     private int mItemBeingFollowed = IBF_NONE; // -1=None, 0=My Location, n=Tracked Item ID.
 
     private boolean mInitialiseMapLocation = false;
+    private boolean mMarkersAdded = false;
 
     private HistoryUploader mHistoryUploader = null;
 
@@ -66,11 +67,11 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
 
         Telephony.initialise(this);
         TrackedItemButtonHelper.initialise(this);
-        TrackedItems.initialise(this);
+        TrackedItems.initialise(this.getApplicationContext());
         HistoryRecorder.initialise(this);
 
         SMSSenderReceiver.setupBroadcastReceiver(this);
-        SMSReceiver.setupBroadcastReceiver(this);
+        //SMSReceiver.setupBroadcastReceiver(this);
 
         if (savedInstanceState != null) {
             for (String key : savedInstanceState.keySet()) {
@@ -138,6 +139,7 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
 
         mButMyLocation = (ImageButton) findViewById(R.id.butMyLocation);
 
+        BackgroundService.runIfNotStarted(getApplicationContext());
     }
 
     @Override
@@ -149,8 +151,14 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
     protected void onStart() {
         super.onStart();
 
+        Log.d(TAG, "onStart");
+
         mButMyLocation.setImageBitmap(TrackedItemButtonHelper.getMyLocationImage(mItemBeingFollowed == IBF_MY_LOCATION));
         drawTrackedItemButtons();
+
+        // Markers may not be added at this point if the map is not ready yet.
+        // When the map becomes ready, the markers will be added then.
+        addTrackedItemMarkers();
     }
 
     @Override
@@ -195,18 +203,23 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
     @Override
     protected void onStop() {
         super.onStop();
+        Log.d(TAG, "onStop");
 
         if (mHistoryUploader != null) {
             mHistoryUploader.stop();
         }
 
-        Log.d(TAG, "onStop");
+        removeTrackedItemButtonsAndMarkers();
+        mMarkersAdded = false;
+
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        SMSReceiver.tearDown(this);
+
+        Log.d(TAG, "onDestroy");
+        //SMSReceiver.tearDown(this);
         SMSSenderReceiver.tearDown(this);
         HistoryRecorder.tearDown(this);
     }
@@ -255,22 +268,25 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         Log.d(TAG, String.format("onActivityResult - req:%d, res:%d", requestCode, resultCode));
 
-        if (requestCode == ACTIVITY_REQUEST.MANAGE_TRACKED_ITEMS.getValue()) {
-            for (TrackedItem trackedItem : TrackedItems.getTrackedItemsList()) {
-                if (trackedItem.isEnabled()) {
-                    if (!trackedItem.hasMapMarker()) {
-                        trackedItem.createMapMarker(mMap);
-                    } else {
-                        trackedItem.updateMapMarkerInfo();
-                    }
-                }
-                else {
-                    trackedItem.removeMapMarker();
-                }
-            }
-
-            drawTrackedItemButtons();
-        }
+//        if (requestCode == ACTIVITY_REQUEST.MANAGE_TRACKED_ITEMS.getValue()) {
+//            for (TrackedItem trackedItem : TrackedItems.getTrackedItemsList()) {
+//                if (trackedItem.isEnabled()) {
+//                    if (!trackedItem.hasMapMarker()) {
+//                        trackedItem.createMapMarker(mMap);
+//                    }
+//                    else {
+//                        trackedItem.updateMapMarkerInfo();
+//                    }
+//                }
+//                else {
+//                    trackedItem.removeMapMarker();
+//                }
+//            }
+//
+//            // These will be handled by onStop and onStart.
+//            //removeTrackedItemButtonsAndMarkers();
+//            //drawTrackedItemButtons();
+//        }
     }
 
     @Override
@@ -282,16 +298,7 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
 
         Log.d(TAG, "The map is ready. Adding markers for tracked items.");
 
-        for (TrackedItem trackedItem : TrackedItems.getTrackedItemsList()) {
-            if (trackedItem.isEnabled()) {
-                trackedItem.createMapMarker(map);
-
-                if (mItemBeingFollowed == trackedItem.getID()) {
-                    initialCameraLocation = trackedItem.getLastLocation();
-                    Log.d(TAG, String.format("Last position of tracked item %s: %s", trackedItem.getName(), trackedItem.getLastLocation().toString()));
-                }
-            }
-        }
+        initialCameraLocation = addTrackedItemMarkers();
 
         if (mItemBeingFollowed == IBF_MY_LOCATION && mMyLastLocation != null) {
             initialCameraLocation = mMyLastLocation;
@@ -345,38 +352,13 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
     }
 
     public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
-        // Extract the ID of the object to be acted on from the request ID.
-        int id = requestCode >> 4;
-        TrackedItem trackedItem;
-        requestCode &= 7;
-
-        switch (Tracker.PERMISSION_REQUEST.valueOf(requestCode)) {
-            case SEND_SMS:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    if (id > 0) {
-                        trackedItem = TrackedItems.getItemByID(id);
-                        if (trackedItem != null) {
-                            trackedItem.sendPing(this);
-                        }
-                    }
-                }
-                else {
-                    Toast.makeText(getApplicationContext(), "Failed to acquire permission to send SMS message.", Toast.LENGTH_LONG).show();
-                    return;
-                }
-                break;
-
-            case READ_SMS:
-            case RECEIVE_SMS:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    SMSReceiver.setupBroadcastReceiver(this);
-                }
-                break;
-        }
+        PermissionChecker.RequestPermissionsResult(this, requestCode, permissions, grantResults);
     }
 
     private void drawTrackedItemButtons() {
         boolean foundFollowedItem = false;
+
+        Log.d(TAG, "Drawing buttons");
 
         LinearLayout container = (LinearLayout)findViewById(R.id.layTrackedItemButtons);
 
@@ -385,8 +367,11 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
         for (TrackedItem ti : TrackedItems.getTrackedItemsList()) {
             if (ti.isEnabled()) {
                 View buttonView = ti.getButton(this, true).getButtonContainerView();
+                ViewGroup parent = (ViewGroup) buttonView.getParent();
+                if (parent != null) {
+                    parent.removeView(buttonView);
+                }
                 container.addView(buttonView);
-
             }
             else {
                 ti.removeMapMarker();
@@ -410,6 +395,42 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
             mItemBeingFollowed = IBF_NONE;
         }
     }
+
+    private Location addTrackedItemMarkers() {
+        Location initialCameraLocation = null;
+
+        if (mMap != null && !mMarkersAdded) {
+            Log.d(TAG, "Adding map markers");
+
+            for (TrackedItem trackedItem : TrackedItems.getTrackedItemsList()) {
+                if (trackedItem.isEnabled()) {
+                    trackedItem.createMapMarker(mMap);
+
+                    if (mItemBeingFollowed == trackedItem.getID()) {
+                        initialCameraLocation = trackedItem.getLastLocation();
+                        Log.d(TAG, String.format("Last position of tracked item %s: %s", trackedItem.getName(), trackedItem.getLastLocation().toString()));
+                    }
+                }
+            }
+
+            mMarkersAdded = true;
+        }
+
+        return initialCameraLocation;
+    }
+
+    private void removeTrackedItemButtonsAndMarkers() {
+        Log.d(TAG, "Removing buttons and markers");
+
+        for (TrackedItem ti : TrackedItems.getTrackedItemsList()) {
+            ti.removeButton();
+            ti.removeMapMarker();
+        }
+
+        mMarkersAdded = false;
+    }
+
+
 
     public void myLocationButtonClick(View view) {
         setItemBeingFollowed(IBF_MY_LOCATION);
@@ -534,7 +555,7 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
         builder
                 .setTitle(title)
                 .setMessage(message)
-                .setNegativeButton(res.getString(android.R.string.no), new DialogInterface.OnClickListener() {
+                .setNegativeButton(res.getString(android.R.string.ok), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
 

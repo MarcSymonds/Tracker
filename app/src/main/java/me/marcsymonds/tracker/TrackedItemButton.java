@@ -8,6 +8,7 @@ import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 
@@ -16,14 +17,14 @@ import static android.os.Build.VERSION.SDK_INT;
 class TrackedItemButton implements Button.OnClickListener, Button.OnLongClickListener {
     private static final String TAG = "TrackedItemButton";
 
-    private final Activity mActivity;
+    private Activity mActivity;
 
-    private final TrackedItem mTrackedItem;
+    private TrackedItem mTrackedItem;
 
-    private final View mButtonContainerView;
-    private final Button mButtonView;
-    private final ImageView mFollowingImage;
-    private final ImageView mPingingImage;
+    private View mButtonContainerView;
+    private Button mButtonView;
+    private ImageView mFollowingImage;
+    private ImageView mPingingImage;
     private Handler mDoubleClickHandler = null;
     private Runnable mDoubleClickRunner = null;
 
@@ -46,6 +47,28 @@ class TrackedItemButton implements Button.OnClickListener, Button.OnLongClickLis
         setFollowingImage(false);
         setPingingImage(false);
     }
+
+    void dispose() {
+        if (mButtonContainerView != null) {
+            ViewGroup parent = (ViewGroup) mButtonContainerView.getParent();
+            if (parent != null) {
+                parent.removeView(mButtonContainerView);
+            }
+
+            mButtonView = null;
+            mFollowingImage = null;
+            mPingingImage = null;
+            mButtonContainerView = null;
+
+            if (mDoubleClickHandler != null && mDoubleClickRunner != null) {
+                mDoubleClickHandler.removeCallbacks(mDoubleClickRunner);
+            }
+
+            mDoubleClickHandler = null;
+            mDoubleClickRunner = null;
+        }
+    }
+
 
     void setButtonAppearance() {
         int itemColour = mTrackedItem.getColour();
@@ -119,6 +142,7 @@ class TrackedItemButton implements Button.OnClickListener, Button.OnLongClickLis
             mButtonView.setTextColor(csl);
         }
     }
+
 
     View getButtonContainerView() {
         return mButtonContainerView;

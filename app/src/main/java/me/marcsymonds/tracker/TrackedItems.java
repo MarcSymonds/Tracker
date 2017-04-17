@@ -1,7 +1,7 @@
 package me.marcsymonds.tracker;
 
 
-import android.app.Activity;
+import android.content.Context;
 import android.util.Log;
 
 import java.io.File;
@@ -29,14 +29,20 @@ class TrackedItems {
     private static String[] mTrackerDeviceNames = null;
     private static String[] mTrackerDeviceClasses = null;
 
-    static void initialise(Activity activity) {
-        mTrackedItemsSaveDir = activity.getDir(TRACKED_ITEMS_DIR, MODE_PRIVATE);
-        mTrackedItemsHistoryDir = activity.getDir(TRACKED_ITEMS_HISTORY_DIR, MODE_PRIVATE);
+    private static boolean mInitialised = false;
 
-        mTrackerDeviceNames = activity.getResources().getStringArray(R.array.tracker_device_codes);
-        mTrackerDeviceClasses = activity.getResources().getStringArray(R.array.tracker_device_classes);
+    synchronized static void initialise(Context context) {
+        if (!mInitialised) {
+            mTrackedItemsSaveDir = context.getDir(TRACKED_ITEMS_DIR, MODE_PRIVATE);
+            mTrackedItemsHistoryDir = context.getDir(TRACKED_ITEMS_HISTORY_DIR, MODE_PRIVATE);
 
-        loadTrackedItems(activity);
+            mTrackerDeviceNames = context.getResources().getStringArray(R.array.tracker_device_codes);
+            mTrackerDeviceClasses = context.getResources().getStringArray(R.array.tracker_device_classes);
+
+            loadTrackedItems();
+
+            mInitialised = true;
+        }
     }
 
     static int getHighestID() {
@@ -68,9 +74,7 @@ class TrackedItems {
         return className;
     }
 
-    private static int loadTrackedItems(Activity activity) {
-        //File dir = activity.getDir(TRACKED_ITEMS_DIR, 0);
-
+    private static int loadTrackedItems() {
         Log.d(TAG, String.format("Loading tracked items from %s", mTrackedItemsSaveDir.getAbsolutePath()));
 
         mItems.clear();

@@ -218,6 +218,13 @@ public class TrackedItem {
         return mButton;
     }
 
+    void removeButton() {
+        if (mButton != null) {
+            mButton.dispose();
+            mButton = null;
+        }
+    }
+
     Location getLastLocation() {
         if (mHistory != null) {
             return mHistory.getLastLocation();

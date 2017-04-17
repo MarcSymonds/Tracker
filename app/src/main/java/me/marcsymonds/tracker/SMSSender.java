@@ -1,25 +1,22 @@
 package me.marcsymonds.tracker;
 
-import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.os.Build;
-import android.support.v4.app.ActivityCompat;
 import android.telephony.SmsManager;
 import android.widget.Toast;
 
 class SMSSender {
     // Intent action that will be passed to the SMS sender, who will then send it back once the
     // SMS message has been sent.
-    static final String INTENT_SMS_SENT = "SMS_SENT";
+    static final String INTENT_SMS_SENT = "me.marcsymonds.Tracker.SMS_SENT";
     private static final String TAG = "SMSSender";
 
-    boolean canSendSMSMessage(Activity activity) {
+    /*boolean canSendSMSMessage(Activity activity) {
         boolean canSend = false;
         // Do we already have permission to send SMS messages>
         if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED) {
@@ -45,12 +42,12 @@ class SMSSender {
         }
 
         return canSend;
-    }
+    }*/
 
     boolean sendMessage(Activity activity, String recipient, String smsMessage, String toastMessage, int trackedItemID, int action) {
         boolean couldSend = false;
 
-        if (canSendSMSMessage(activity)) {
+        if (PermissionChecker.acquireSMSSendPermissionForDevice(activity, trackedItemID)) {
             if (recipient == null || recipient.length() == 0) {
                 TrackedItem trackedItem = TrackedItems.getItemByID(trackedItemID);
 

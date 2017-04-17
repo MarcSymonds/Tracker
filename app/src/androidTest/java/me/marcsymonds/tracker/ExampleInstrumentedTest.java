@@ -1,8 +1,10 @@
 package me.marcsymonds.tracker;
 
 import android.content.Context;
+import android.net.Uri;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
+import android.util.Log;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -169,5 +171,20 @@ public class ExampleInstrumentedTest {
         for (String msgIn : msgs) {
             td.messageReceived(context, ti, "1234", msgIn);
         }
+    }
+
+    @Test
+    public void testPermissionsChecker() throws Exception {
+        Context context = InstrumentationRegistry.getTargetContext();
+
+        //PermissionChecker.checkNeededPermissions();
+
+    }
+
+    @Test
+    public void testURI() throws Exception {
+        Uri u = Uri.parse("package:me.marcsymonds.tracker");
+
+        Log.d("TEST", "testURI: " + u.toString());
     }
 }
