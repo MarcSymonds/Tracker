@@ -5,18 +5,22 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.view.menu.MenuBuilder;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -42,12 +46,15 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
     private final String SAVE_MAP_ZOOM = "MAPZOOM";
     private final String SAVE_MAP_BEARING = "MAPBEARING";
 
+    private final String PREF_KEEP_SCREEN_ON = "keepScreenOn";
+
     private final String MY_HISTORY_DIR = "MyHistory";
 
     private MapFragment mMapFragment = null;
     private GoogleMap mMap = null;
     private Location mMyLastLocation = null;
     private HistoryManager mMyLocationHistory = null;
+    private SharedPreferences mPreferences = null;
 
     private CameraPosition mInitialCamera = null;
 
@@ -56,6 +63,7 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
 
     private boolean mInitialiseMapLocation = false;
     private boolean mMarkersAdded = false;
+    private boolean mKeepScreenOn = false;
 
     private HistoryUploader mHistoryUploader = null;
 
@@ -64,6 +72,8 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
         super.onCreate(savedInstanceState);
 
         Log.d(TAG, "onCreate");
+
+        mPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         Telephony.initialise(this);
         TrackedItemButtonHelper.initialise(this);
@@ -156,9 +166,15 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
         mButMyLocation.setImageBitmap(TrackedItemButtonHelper.getMyLocationImage(mItemBeingFollowed == IBF_MY_LOCATION));
         drawTrackedItemButtons();
 
+        mKeepScreenOn = mPreferences.getBoolean(PREF_KEEP_SCREEN_ON, false);
+        if (mKeepScreenOn) {
+            keepScreenOn(mKeepScreenOn);
+        }
+
         // Markers may not be added at this point if the map is not ready yet.
         // When the map becomes ready, the markers will be added then.
         addTrackedItemMarkers();
+
     }
 
     @Override
@@ -229,7 +245,40 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.main_menu, menu);
 
+        // Turn on the icons in the overflow menu. Cos, why not!
+        if (menu instanceof MenuBuilder) {
+            ((MenuBuilder) menu).setOptionalIconsVisible(true);
+        }
+
         return true;
+    }
+
+    /**
+     * Prepare the Screen's standard options menu to be displayed.  This is
+     * called right before the menu is shown, every time it is shown.  You can
+     * use this method to efficiently enable/disable items or otherwise
+     * dynamically modify the contents.
+     * <p>
+     * <p>The default implementation updates the system menu items based on the
+     * activity's state.  Deriving classes should always call through to the
+     * base class implementation.
+     *
+     * @param menu The options menu as last shown or first initialized by
+     *             onCreateOptionsMenu().
+     * @return You must return true for the menu to be displayed;
+     * if you return false it will not be shown.
+     * @see #onCreateOptionsMenu
+     */
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        // Set the state and icon of the Keep Screen On menu option.
+        MenuItem mi = menu.findItem(R.id.main_menu_keep_screen_on);
+        if (mi != null) {
+            mi.setChecked(mKeepScreenOn);
+            mi.setIcon(mKeepScreenOn ? R.drawable.ic_phone_awake_android_black_24px : R.drawable.ic_phone_sleep_android_black_24px);
+        }
+
+        return super.onPrepareOptionsMenu(menu);
     }
 
     @Override
@@ -259,6 +308,12 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
                     mHistoryUploader.execute(files);
                 }
                 break;
+
+            case R.id.main_menu_keep_screen_on:
+                mKeepScreenOn = !mKeepScreenOn;
+                option.setChecked(mKeepScreenOn);
+                keepScreenOn(mKeepScreenOn);
+                break;
         }
 
         return true;
@@ -267,26 +322,6 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         Log.d(TAG, String.format("onActivityResult - req:%d, res:%d", requestCode, resultCode));
-
-//        if (requestCode == ACTIVITY_REQUEST.MANAGE_TRACKED_ITEMS.getValue()) {
-//            for (TrackedItem trackedItem : TrackedItems.getTrackedItemsList()) {
-//                if (trackedItem.isEnabled()) {
-//                    if (!trackedItem.hasMapMarker()) {
-//                        trackedItem.createMapMarker(mMap);
-//                    }
-//                    else {
-//                        trackedItem.updateMapMarkerInfo();
-//                    }
-//                }
-//                else {
-//                    trackedItem.removeMapMarker();
-//                }
-//            }
-//
-//            // These will be handled by onStop and onStart.
-//            //removeTrackedItemButtonsAndMarkers();
-//            //drawTrackedItemButtons();
-//        }
     }
 
     @Override
@@ -430,8 +465,6 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
         mMarkersAdded = false;
     }
 
-
-
     public void myLocationButtonClick(View view) {
         setItemBeingFollowed(IBF_MY_LOCATION);
     }
@@ -563,6 +596,20 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
                 })
                 .setCancelable(true)
                 .show();
+    }
+
+    private void keepScreenOn(boolean keepOn) {
+        if (keepOn) {
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        } else {
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
+
+        if (mPreferences != null) {
+            SharedPreferences.Editor editor = mPreferences.edit();
+            editor.putBoolean(PREF_KEEP_SCREEN_ON, keepOn);
+            editor.apply();
+        }
     }
 
     enum PERMISSION_REQUEST {

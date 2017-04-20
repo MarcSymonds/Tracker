@@ -6,10 +6,6 @@ import android.util.Log;
 import java.util.UUID;
 
 /**
- * Created by Marc on 09/04/2017.
- */
-
-/**
  *
  */
 class ApplicationIdentifier {
