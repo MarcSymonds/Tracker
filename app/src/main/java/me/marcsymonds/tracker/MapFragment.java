@@ -122,10 +122,18 @@ public class MapFragment
     public void onStop() {
         super.onStop();
 
-        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
-
         if (mGoogleApiClient != null) {
-            mGoogleApiClient.disconnect();
+            if (mGoogleApiClient.isConnected()) {
+                try {
+                    LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+                } catch (Exception ex) {
+                    Log.e(TAG, "onStop: " + ex.toString());
+                }
+            }
+
+            if (mGoogleApiClient.isConnected() || mGoogleApiClient.isConnecting()) {
+                mGoogleApiClient.disconnect();
+            }
         }
     }
 
