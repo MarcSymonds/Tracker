@@ -110,14 +110,12 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
      */
     protected boolean isValidFragment(String fragmentName) {
         return PreferenceFragment.class.getName().equals(fragmentName)
-                || HistoryUploadFragment.class.getName().equals(fragmentName);
-        //|| GeneralPreferenceFragment.class.getName().equals(fragmentName)
-        //|| DataSyncPreferenceFragment.class.getName().equals(fragmentName)
-        //|| NotificationPreferenceFragment.class.getName().equals(fragmentName);
+                || HistoryUploadFragment.class.getName().equals(fragmentName)
+                || MyLocationFragment.class.getName().equals(fragmentName);
     }
 
     /**
-     * This fragment shows general preferences only. It is used when the
+     * This fragment shows general preference_text only. It is used when the
      * activity is showing a two-pane settings UI.
      */
 
@@ -137,12 +135,34 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
 
         @Override
         public boolean onOptionsItemSelected(MenuItem item) {
-            int id = item.getItemId();
-            if (id == android.R.id.home) {
-                Log.d("HUF", "Restarting SettingsActivity");
+            if (item.getItemId() == android.R.id.home) {
                 startActivity(new Intent(getActivity(), SettingsActivity.class));
                 return true;
             }
+
+            return super.onOptionsItemSelected(item);
+        }
+    }
+
+    public static class MyLocationFragment extends PreferenceFragment {
+        private static final PreferenceBinder mPreferenceBinder = new PreferenceBinder();
+
+        @Override
+        public void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+
+            addPreferencesFromResource(R.xml.pref_my_location);
+
+            mPreferenceBinder.bindControls(getPreferenceScreen());
+        }
+
+        @Override
+        public boolean onOptionsItemSelected(MenuItem item) {
+            if (item.getItemId() == android.R.id.home) {
+                startActivity(new Intent(getActivity(), SettingsActivity.class));
+                return true;
+            }
+
             return super.onOptionsItemSelected(item);
         }
     }
@@ -150,7 +170,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     //region EXAMPLE FRAGMENTS
 
     /**
-     * This fragment shows general preferences only. It is used when the
+     * This fragment shows general preference_text only. It is used when the
      * activity is showing a two-pane settings UI.
      */
     /*
@@ -162,7 +182,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             addPreferencesFromResource(R.xml.pref_general);
             setHasOptionsMenu(true);
 
-            // Bind the summaries of EditText/List/Dialog/Ringtone preferences
+            // Bind the summaries of EditText/List/Dialog/Ringtone preference_text
             // to their values. When their values change, their summaries are
             // updated to reflect the new value, per the Android Design
             // guidelines.
@@ -183,7 +203,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     */
 
     /**
-     * This fragment shows notification preferences only. It is used when the
+     * This fragment shows notification preference_text only. It is used when the
      * activity is showing a two-pane settings UI.
      */
     /*
@@ -195,7 +215,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             addPreferencesFromResource(R.xml.pref_notification);
             setHasOptionsMenu(true);
 
-            // Bind the summaries of EditText/List/Dialog/Ringtone preferences
+            // Bind the summaries of EditText/List/Dialog/Ringtone preference_text
             // to their values. When their values change, their summaries are
             // updated to reflect the new value, per the Android Design
             // guidelines.
@@ -215,7 +235,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
     */
 
     /**
-     * This fragment shows data and sync preferences only. It is used when the
+     * This fragment shows data and sync preference_text only. It is used when the
      * activity is showing a two-pane settings UI.
      */
     /*
@@ -227,7 +247,7 @@ public class SettingsActivity extends AppCompatPreferenceActivity {
             addPreferencesFromResource(R.xml.pref_data_sync);
             setHasOptionsMenu(true);
 
-            // Bind the summaries of EditText/List/Dialog/Ringtone preferences
+            // Bind the summaries of EditText/List/Dialog/Ringtone preference_text
             // to their values. When their values change, their summaries are
             // updated to reflect the new value, per the Android Design
             // guidelines.

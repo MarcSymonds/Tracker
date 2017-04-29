@@ -56,6 +56,8 @@ public class BackgroundServiceStarter extends BroadcastReceiver {
         boolean start = false;
         String action = intent.getAction();
 
+        Log.d(TAG, "onReceive: " + intent.toString());
+
         switch (action) {
             case Intent.ACTION_BOOT_COMPLETED:
                 start = true;

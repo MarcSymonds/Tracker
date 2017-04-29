@@ -1,6 +1,7 @@
 package me.marcsymonds.tracker;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -72,7 +73,8 @@ class HistoryUploader extends AsyncTask<String, Integer, HistoryUploaderState> i
     private IHistoryUploaderController mController = null;
 
     HistoryUploader(Activity activity) {
-        mAppID = ApplicationIdentifier.getIdentifier(activity.getApplicationContext());
+        Context context = activity.getApplicationContext();
+        mAppID = ApplicationIdentifier.getIdentifier(context);
 
         mHistoryManager = HistoryRecorder.getHistoryManager();
 
@@ -81,9 +83,9 @@ class HistoryUploader extends AsyncTask<String, Integer, HistoryUploaderState> i
         }
 
         // Get the 2 URLs we could upload to.
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(activity.getApplicationContext());
-        mLocalURL = sp.getString("history_upload_local_url", "");
-        mRemoteURL = sp.getString("history_upload_remote_url", "");
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+        mLocalURL = sp.getString(Pref.PREF_HISTORY_UPLOAD_LOCAL_URL, "");
+        mRemoteURL = sp.getString(Pref.PREF_HISTORY_UPLOAD_REMOTE_URL, "");
 
         // See if the activity calling us has a "progressBar" LinearLayout. If so, then we will use
         // it to show progress of the upload.

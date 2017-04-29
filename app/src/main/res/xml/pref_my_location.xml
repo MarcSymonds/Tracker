@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:custom="http://schemas.android.com/apk/res/me.marcsymonds.tracker">
+
+    <PreferenceCategory android:title="Normal Location Updates">
+        <me.marcsymonds.tracker.ConstrainedIntegerPreference
+            android:defaultValue="10"
+            android:key="my_location_update_interval"
+            android:numeric="integer"
+            android:summary="@string/seconds_bracketed"
+            android:title="@string/my_location_update_interval"
+            custom:maxValue="300"
+            custom:minValue="10" />
+
+        <me.marcsymonds.tracker.ConstrainedIntegerPreference
+            android:defaultValue="5"
+            android:key="my_location_fastest_update_interval"
+            android:numeric="integer"
+            android:summary="@string/seconds_bracketed"
+            android:title="@string/my_location_fastest_update_interval"
+            custom:maxValue="300"
+            custom:minValue="5" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="my_location_background_update"
+        android:title="@string/my_location_background_update">
+        <CheckBoxPreference
+            android:checked="true"
+            android:key="my_location_background_updates_enabled"
+            android:title="Enable background updates" />
+
+        <me.marcsymonds.tracker.ConstrainedIntegerPreference
+            android:defaultValue="2"
+            android:dependency="my_location_background_updates_enabled"
+            android:key="my_location_background_update_interval"
+            android:numeric="integer"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:summary="@string/minutes_bracketed"
+            android:title="@string/my_location_background_update_interval"
+            custom:maxValue="360"
+            custom:minValue="1" />
+    </PreferenceCategory>
+</PreferenceScreen>

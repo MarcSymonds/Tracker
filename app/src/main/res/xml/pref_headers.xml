@@ -1,0 +1,14 @@
+<preference-headers xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- These settings headers are only used on tablets. -->
+
+    <header
+        android:fragment="me.marcsymonds.tracker.SettingsActivity$HistoryUploadFragment"
+        android:icon="@drawable/ic_file_upload_black_24dp"
+        android:title="@string/pref_header_upload_history" />
+
+    <header
+        android:fragment="me.marcsymonds.tracker.SettingsActivity$MyLocationFragment"
+        android:icon="@drawable/ic_gps_fixed_black_24dp"
+        android:title="@string/my_location_settings" />
+</preference-headers>

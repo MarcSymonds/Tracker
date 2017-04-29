@@ -9,7 +9,7 @@
         app:showAsAction="never" />
 
     <item
-        android:id="@+id/mmUploadHistory"
+        android:id="@+id/main_menu_upload_history_now"
         android:icon="@drawable/ic_file_upload_black_24dp"
         android:title="@string/main_menu_upload_history"
         app:showAsAction="never" />

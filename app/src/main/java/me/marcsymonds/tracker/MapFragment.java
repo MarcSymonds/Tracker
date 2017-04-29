@@ -2,8 +2,10 @@ package me.marcsymonds.tracker;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
@@ -49,6 +51,9 @@ public class MapFragment
     private GoogleMap mMap = null;
     private GoogleApiClient mGoogleApiClient = null;
 
+    private int mLocationUpdateInterval = 100000;
+    private int mLocationUpdateFastestInterval = 5000;
+
     public MapFragment() {
         // Required empty public constructor
     }
@@ -66,7 +71,7 @@ public class MapFragment
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        Log.d(TAG, "onCreate: ");
         GoogleApiClient.Builder apiBuilder = new GoogleApiClient.Builder(this.getContext());
         apiBuilder.addApi(LocationServices.API);
         apiBuilder.addConnectionCallbacks(this);
@@ -115,13 +120,14 @@ public class MapFragment
     @Override
     public void onStart() {
         super.onStart();
+        Log.d(TAG, "onStart: ");
         mGoogleApiClient.connect();
     }
 
     @Override
     public void onStop() {
         super.onStop();
-
+        Log.d(TAG, "onStop: ");
         if (mGoogleApiClient != null) {
             if (mGoogleApiClient.isConnected()) {
                 try {
@@ -140,10 +146,17 @@ public class MapFragment
     // Trigger new location updates at interval
     private void startLocationUpdates() {
         // Create the location request
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getContext());
+
+        long interval = sp.getLong(Pref.PREF_MY_LOCATION_UPDATE_INTERVAL, 10L) * 1000L;
+        long fInterval = sp.getLong(Pref.PREF_MY_LOCATION_FASTEST_UPDATE_INTERVAL, 5L) * 1000L;
+
+        Log.d(TAG, "startLocationUpdates: " + String.valueOf(interval) + ", " + String.valueOf(fInterval));
+
         LocationRequest locationRequest = LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-                .setInterval(10000)
-                .setFastestInterval(5000);
+                .setInterval(interval)
+                .setFastestInterval(fInterval);
         // Request location updates
         try {
             LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, locationRequest, this);
@@ -154,13 +167,6 @@ public class MapFragment
     }
 
     public void onLocationChanged(android.location.Location location) {
-        // New location has now been determined
-        /*String msg = "Updated Location: " +
-                Double.toString(location.getLatitude()) + "," +
-                Double.toString(location.getLongitude());*/
-
-        //Log.d(TAG, msg);
-
         if (mMapFragmentActions != null) {
             Location myLocation = new Location(0, location); // Convert android.location.Location to Tracker.Location.
 

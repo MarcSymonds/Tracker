@@ -5,10 +5,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AlertDialog;
@@ -46,34 +44,27 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
     private final String SAVE_MAP_ZOOM = "MAPZOOM";
     private final String SAVE_MAP_BEARING = "MAPBEARING";
 
-    private final String PREF_KEEP_SCREEN_ON = "keepScreenOn";
-
-    private final String MY_HISTORY_DIR = "MyHistory";
-
     private MapFragment mMapFragment = null;
     private GoogleMap mMap = null;
-    private Location mMyLastLocation = null;
-    private HistoryManager mMyLocationHistory = null;
-    private SharedPreferences mPreferences = null;
 
     private CameraPosition mInitialCamera = null;
 
     private ImageButton mButMyLocation = null;
     private int mItemBeingFollowed = IBF_NONE; // -1=None, 0=My Location, n=Tracked Item ID.
 
-    private boolean mInitialiseMapLocation = false;
+    private boolean mSetInitialMapLocation = false;
     private boolean mMarkersAdded = false;
     private boolean mKeepScreenOn = false;
 
     private HistoryUploader mHistoryUploader = null;
+
+    private MyLocation mMyLocation = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         Log.d(TAG, "onCreate");
-
-        mPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         Telephony.initialise(this);
         TrackedItemButtonHelper.initialise(this);
@@ -97,7 +88,7 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
             String temp = savedInstanceState.getString(SAVE_MY_LOCATION, null);
             if (temp != null) {
                 try {
-                    mMyLastLocation = new Location(temp);
+                    MyLocation.getInstance().setLastLocation(new Location(temp));
                 }
                 catch (ParseException pe) {
                     Log.e(TAG, String.format("Failed to parse saved current location: %s - %s", temp, pe.toString()));
@@ -163,13 +154,13 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
 
         Log.d(TAG, "onStart");
 
+        LocalBroadcastManager
+                .getInstance(getApplicationContext())
+                .sendBroadcast(
+                        new Intent(BackgroundLocationUpdateManager.EVENT_STOP_LOCATION_UPDATES));
+
         mButMyLocation.setImageBitmap(TrackedItemButtonHelper.getMyLocationImage(mItemBeingFollowed == IBF_MY_LOCATION));
         drawTrackedItemButtons();
-
-        mKeepScreenOn = mPreferences.getBoolean(PREF_KEEP_SCREEN_ON, false);
-        if (mKeepScreenOn) {
-            keepScreenOn(mKeepScreenOn);
-        }
 
         // Markers may not be added at this point if the map is not ready yet.
         // When the map becomes ready, the markers will be added then.
@@ -185,6 +176,11 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
     @Override
     protected void onResume() {
         super.onResume();
+
+        mKeepScreenOn = Pref.getKeepScreenOn(this);
+        if (mKeepScreenOn) {
+            keepScreenOn(true);
+        }
     }
 
     @Override
@@ -195,8 +191,9 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
 
         outState.putInt(SAVE_ITEM_BEING_FOLLOWED, mItemBeingFollowed);
 
-        if (mMyLastLocation != null) {
-            outState.putString(SAVE_MY_LOCATION, mMyLastLocation.toString());
+        Location lastLocation = MyLocation.getInstance().getLastLocation();
+        if (lastLocation != null) {
+            outState.putString(SAVE_MY_LOCATION, lastLocation.toString());
         }
 
         if (mMap != null) {
@@ -213,7 +210,7 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
     protected void onPause() {
         super.onPause();
 
-        Log.d(TAG, "onPause");
+        Pref.setKeepScreenOn(this, mKeepScreenOn);
     }
 
     @Override
@@ -227,6 +224,11 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
 
         removeTrackedItemButtonsAndMarkers();
         mMarkersAdded = false;
+
+        LocalBroadcastManager
+                .getInstance(getApplicationContext())
+                .sendBroadcast(
+                        new Intent(BackgroundLocationUpdateManager.EVENT_START_LOCATION_UPDATES));
 
     }
 
@@ -301,7 +303,7 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
                 startActivityForResult(intent, ACTIVITY_REQUEST.UNKNOWN.getValue());
                 break;
 
-            case R.id.mmUploadHistory:
+            case R.id.main_menu_upload_history_now:
                 if (mHistoryUploader == null || mHistoryUploader.isCompleted()) {
                     mHistoryUploader = new HistoryUploader(this);
                     String[] files = HistoryRecorder.getHistoryManager().getListOfFilesForUpload();
@@ -335,9 +337,11 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
 
         initialCameraLocation = addTrackedItemMarkers();
 
-        if (mItemBeingFollowed == IBF_MY_LOCATION && mMyLastLocation != null) {
-            initialCameraLocation = mMyLastLocation;
-            Log.d(TAG, String.format("Last position of my location: %s", mMyLastLocation.toString()));
+        Location lastLocation = MyLocation.getInstance().getLastLocation();
+
+        if (mItemBeingFollowed == IBF_MY_LOCATION && lastLocation != null) {
+            initialCameraLocation = lastLocation;
+            Log.d(TAG, String.format("Last position of my location: %s", lastLocation.toString()));
         }
 
         if (initialCameraLocation != null) {
@@ -354,35 +358,17 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
             mMap.moveCamera(cu);
         }
         else {
-            mInitialiseMapLocation = true; // When we get the first location message, move the map to that location.
+            mSetInitialMapLocation = true; // When we get the first location message, move the map to that location.
         }
     }
 
     @Override
     public void updateMyLocation(Location location) {
-        if (mMyLocationHistory == null) {
-            mMyLocationHistory = new HistoryManager(this.getDir(MY_HISTORY_DIR, MODE_PRIVATE));
-        }
+        MyLocation.getInstance().recordLocation(this.getApplicationContext(), location);
 
-        //if (mMyLastLocation != null) {
-        //Log.d(TAG, String.format("Distance from %s to %s = %f", mMyLastLocation.toString(), location.toString(), mMyLastLocation.distanceTo(location)));
-        //}
-
-        // Only record new location if actually moved a bit.
-        // Non-GPS determined positions can be out by quite a bit.
-        if (mMyLastLocation == null
-                || (mMyLastLocation.isGPS() && location.isGPS() && mMyLastLocation.distanceTo(location) > 4.0)
-                || (mMyLastLocation.distanceTo(location) > 9.0)) {
-
-            mMyLocationHistory.recordLocation(location);
-            HistoryRecorder.recordHistory(location);
-
-            mMyLastLocation = location;
-        }
-
-        if (mItemBeingFollowed == IBF_MY_LOCATION || mInitialiseMapLocation) {
-            mMapFragment.centerMap(location, mInitialiseMapLocation ? 16 : -1);
-            mInitialiseMapLocation = false;
+        if (mItemBeingFollowed == IBF_MY_LOCATION || mSetInitialMapLocation) {
+            mMapFragment.centerMap(location, mSetInitialMapLocation ? 16 : -1);
+            mSetInitialMapLocation = false;
         }
     }
 
@@ -521,7 +507,11 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
 
             if (mItemBeingFollowed == IBF_MY_LOCATION) {
                 mButMyLocation.setImageBitmap(TrackedItemButtonHelper.getMyLocationImage(true));
-                mMapFragment.centerMap(mMyLastLocation);
+
+                Location lastLocation = MyLocation.getInstance().getLastLocation();
+                if (lastLocation != null) {
+                    mMapFragment.centerMap(lastLocation);
+                }
             }
             else if (mItemBeingFollowed > 0) {
                 trackedItem = TrackedItems.getItemByID(mItemBeingFollowed);
@@ -603,12 +593,6 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         } else {
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        }
-
-        if (mPreferences != null) {
-            SharedPreferences.Editor editor = mPreferences.edit();
-            editor.putBoolean(PREF_KEEP_SCREEN_ON, keepOn);
-            editor.apply();
         }
     }
 

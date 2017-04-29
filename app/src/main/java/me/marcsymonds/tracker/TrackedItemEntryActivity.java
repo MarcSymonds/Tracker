@@ -30,7 +30,7 @@ public class TrackedItemEntryActivity extends AppCompatPreferenceActivity {
 
         SharedPreferences sp = this.getSharedPreferences(TRACKED_ITEM_ENTRY_PREFS, MODE_PRIVATE);
         /*
-        // Output all of the shared preferences.
+        // Output all of the shared preference_text.
 
         Map<String, ?> x =  sp.getAll();
 
@@ -132,10 +132,10 @@ public class TrackedItemEntryActivity extends AppCompatPreferenceActivity {
             // Update the tracker device type.
             trackedItem.setTrackerType(sp.getString(KEY_TRACKED_ITEM_DEVICE_TYPE, ""));
 
-            // Get the preferences from Shared Preferences.
+            // Get the preference_text from Shared Preferences.
             trackedItem.getFromSharedPreferences(sp);
 
-            // Save the preferences to file.
+            // Save the preference_text to file.
             trackedItem.saveToFile();
 
             return trackedItem.getID();
@@ -163,7 +163,7 @@ public class TrackedItemEntryActivity extends AppCompatPreferenceActivity {
                 PreferenceManager pm = getPreferenceManager();
                 pm.setSharedPreferencesName(TRACKED_ITEM_ENTRY_PREFS);
 
-                // Add the base "Tracked Item" prefererences to the preferences.
+                // Add the base "Tracked Item" prefererences to the preference_text.
                 addPreferencesFromResource(R.xml.pref_tracked_item_entry);
 
                 // and bind the controls to their summary values, so the user can see the current
@@ -172,11 +172,11 @@ public class TrackedItemEntryActivity extends AppCompatPreferenceActivity {
                 mPreferenceBinder.bindControls(getPreferenceScreen(), new String[]{KEY_TRACKED_ITEM_DEVICE_TYPE});
 
                 // The "Device Type" preference needs special attention. If the device type is
-                // changed, then we need to show the preferences for that device type.
+                // changed, then we need to show the preference_text for that device type.
                 ListPreference p = (ListPreference) findPreference(KEY_TRACKED_ITEM_DEVICE_TYPE);
                 if (p != null) {
                     // Change listener for the device type.
-                    // If the device type is changed, then load the preferences for that device
+                    // If the device type is changed, then load the preference_text for that device
                     // type.
                     p.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
                         @Override
@@ -192,11 +192,11 @@ public class TrackedItemEntryActivity extends AppCompatPreferenceActivity {
                             preference.setSummary(name);
                             Log.d(TAG, String.format("LIST CHANGE: %s - %s - %s - %s - %s - %s", o, code, name, lp.getEntry(), lp.getValue(), lp.getKey()));
 
-                            // Add the preferences for this device type. The preferences for the
+                            // Add the preference_text for this device type. The preference_text for the
                             // current device type are removed.
                             addDevicePreferences(code);
 
-                            // Bind the controls for the device preferences, so that the value of
+                            // Bind the controls for the device preference_text, so that the value of
                             // each preference is shown.
                             mPreferenceBinder.bindControlsForGroup(getPreferenceScreen(), KEY_TRACKED_DEVICE_SETTINGS_GROUP, null);
 
@@ -234,10 +234,10 @@ public class TrackedItemEntryActivity extends AppCompatPreferenceActivity {
                 ps.removePreference(pc);
             }
 
-            // Get the resource ID of the preferences XML file for the new device type.
+            // Get the resource ID of the preference_text XML file for the new device type.
             int resID = getResources().getIdentifier("pref_tracker_device_" + deviceTypeName.toLowerCase(), "xml", "me.marcsymonds.tracker");
             Log.d(TAG, String.format("RESOURCE ID: %d", resID));
-            // and add those preferences to the form.
+            // and add those preference_text to the form.
             if (resID > 0) {
                 addPreferencesFromResource(resID);
             }

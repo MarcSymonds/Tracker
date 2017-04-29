@@ -13,4 +13,13 @@
     <string name="tracked_item_auto_ping_off">The Ping Command will not automatically be resent</string>
 
     <string name="tracked_item_default_device">TK103A</string>
+
+    <string name="my_location_settings">My Location Settings</string>
+
+    <string name="my_location_fastest_update_interval">Fastest update interval</string>
+    <string name="my_location_update_interval">Update interval</string>
+
+    <string name="my_location_background_update">Background Location Updates</string>
+    <string name="my_location_background_updates_enabled">Enable background updates</string>
+    <string name="my_location_background_update_interval">Background update interval</string>
 </resources>

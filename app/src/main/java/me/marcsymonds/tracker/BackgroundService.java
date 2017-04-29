@@ -8,6 +8,7 @@ import android.content.IntentFilter;
 import android.os.AsyncTask;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -22,6 +23,7 @@ public class BackgroundService extends Service {
     private static boolean mServiceRunning = false;
 
     private SMSReceiver mSMSReceiver = null;
+    private BackgroundLocationUpdateManager mBackgrounLocationUpdateManager = null;
 
     static boolean isServiceRunning() {
         return mServiceRunning;
@@ -94,6 +96,21 @@ public class BackgroundService extends Service {
                     Toast.LENGTH_LONG).show();
         }
 
+        mBackgrounLocationUpdateManager = BackgroundLocationUpdateManager.getInstance();
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(BackgroundLocationUpdateManager.EVENT_START_LOCATION_UPDATES);
+        filter.addAction(BackgroundLocationUpdateManager.EVENT_STOP_LOCATION_UPDATES);
+        filter.addAction(BackgroundLocationUpdateManager.EVENT_START_LOCATION_UPDATES_ISNS);
+
+        LocalBroadcastManager lbm = LocalBroadcastManager.getInstance(getApplicationContext());
+
+        lbm.registerReceiver(mBackgrounLocationUpdateManager, filter);
+
+        // Could just call the function mBackgrounLocationUpdateManager.onReceive(.,.) - not sure if that's a good idea.
+        lbm.sendBroadcast(new Intent(BackgroundLocationUpdateManager.EVENT_START_LOCATION_UPDATES_ISNS));
+
+        Log.d(TAG, "onStartCommand: Registered background location update manager and started it");
+
         mServiceRunning = true;
 
         return START_STICKY;// super.onStartCommand(intent, flags, startId);
@@ -112,6 +129,10 @@ public class BackgroundService extends Service {
         if (mSMSReceiver != null) {
             unregisterReceiver(mSMSReceiver);
             mSMSReceiver = null;
+        }
+
+        if (mBackgrounLocationUpdateManager != null) {
+            LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(mBackgrounLocationUpdateManager);
         }
 
         mServiceRunning = false;
