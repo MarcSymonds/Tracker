@@ -20,6 +20,14 @@
         <attr name="showDialog" />
     </declare-styleable>
 
+    <attr name="minValue" format="integer" />
+    <attr name="maxValue" format="integer" />
+
+    <declare-styleable name="ConstrainedIntegerPreference">
+        <attr name="minValue" />
+        <attr name="maxValue" />
+    </declare-styleable>
+
     <attr name="longClickIconLocation" format="enum">
         <enum name="topLeft" value="1" />
         <enum name="topRight" value="2" />
