@@ -19,24 +19,20 @@ import android.view.View;
 public class ColourPickerPreference extends Preference implements ColourPickerDialog.OnColourSelectedListener {
     private final String TAG = "ColourPickerPreference";
 
-    private final Context mContext;
     private int mColour = 0;
     private int[] mColourChoices = {};
 
     public ColourPickerPreference(Context context) {
         super(context);
-        mContext = context;
     }
 
     public ColourPickerPreference(Context context, AttributeSet attrs) {
         super(context, attrs);
-        mContext = context;
         initAttrs(attrs, 0);
     }
 
     public ColourPickerPreference(Context context, AttributeSet attrs, int defaultStyle) {
         super(context, attrs, defaultStyle);
-        mContext = context;
         initAttrs(attrs, defaultStyle);
     }
 
@@ -61,9 +57,6 @@ public class ColourPickerPreference extends Preference implements ColourPickerDi
             a.recycle();
         }
 
-        //setTitle("Colour");
-        //setSummary("Colour of marker on the map");
-
         setWidgetLayoutResource(R.layout.preference_colour_picker_preview);
     }
 
@@ -83,15 +76,11 @@ public class ColourPickerPreference extends Preference implements ColourPickerDi
     }
 
     private void setColour(int colour) {
-        Log.d(TAG, String.format("setColour %d - Has Key:%s, Is Persistent:%s", colour, hasKey() ? "YES" : "NO", isPersistent() ? "YES" : "NO"));
         if (callChangeListener(colour)) {
             mColour = colour;
-            Log.d(TAG, String.format("shouldPersist = %s", shouldPersist() ? "YES": "NO"));
             persistInt(colour);
             notifyChanged();
         }
-        else
-            Log.d(TAG, "callChangeListener failed");
     }
 
     @Override
