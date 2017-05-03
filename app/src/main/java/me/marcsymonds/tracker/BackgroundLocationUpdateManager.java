@@ -3,6 +3,9 @@ package me.marcsymonds.tracker;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
@@ -11,6 +14,8 @@ import android.util.Log;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
+
+import static java.lang.System.currentTimeMillis;
 
 /**
  * Created by Marc on 27/04/2017.
@@ -21,6 +26,8 @@ public class BackgroundLocationUpdateManager extends BroadcastReceiver implement
     public static final String EVENT_START_LOCATION_UPDATES_ISNS = "BGLU-START-ISNS"; // If state not set.
     public static final String EVENT_STOP_LOCATION_UPDATES = "BGLU_STOP";
     private static final String TAG = "BGLocUpdManager";
+    private static final long TIME_BETWEEN_GPS_FIXES = 30L * 60000L; // Minutes.
+
     private static BackgroundLocationUpdateManager mBackgroundLocationUpdateManager = null;
 
     private boolean mStateSet = false;
@@ -30,8 +37,11 @@ public class BackgroundLocationUpdateManager extends BroadcastReceiver implement
     private Handler mHandler = null;
     private Runnable mRunnable = null;
 
+    private long mNextGPSFix = 0;
+
     // Private constructor so it can't be created elsewhere.
     private BackgroundLocationUpdateManager() {
+
     }
 
     public synchronized static BackgroundLocationUpdateManager getInstance() {
@@ -159,9 +169,25 @@ public class BackgroundLocationUpdateManager extends BroadcastReceiver implement
             @Override
             public void run() {
                 if (isBackgroundUpdateEnabled(context)) {
-                    updateLocation();
+                    SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+                    mNextGPSFix = sp.getLong(Pref.PREF_BACKGROUND_LOCATION_UPDATE_LAST_GPS, mNextGPSFix);
+
+                    Log.d(TAG, String.format("run: %d %d", currentTimeMillis(), mNextGPSFix));
+
+                    if (currentTimeMillis() < mNextGPSFix) {
+                        updateLocationFromLastLocation();
+                    } else {
+                        updateLocationUsingGPS();
+
+                        mNextGPSFix = currentTimeMillis() + sp.getLong(Pref.PREF_BACKGROUND_LOCATION_UPDATE_GPS_INTERVAL, TIME_BETWEEN_GPS_FIXES);
+
+                        SharedPreferences.Editor editor = sp.edit();
+                        editor.putLong(Pref.PREF_BACKGROUND_LOCATION_UPDATE_LAST_GPS, mNextGPSFix);
+                        editor.apply();
+                    }
                 }
 
+                // Requeue this runnable to get the location again.
                 mHandler.postDelayed(this, getLocationUpdateInterval(context));
             }
         };
@@ -190,13 +216,54 @@ public class BackgroundLocationUpdateManager extends BroadcastReceiver implement
         }
     }
 
-    private void updateLocation() {
+    private void updateLocationUsingGPS() {
+        Log.d(TAG, "updateLocationUsingGPS: ");
+
+        Context context = mGoogleApiClient.getContext().getApplicationContext();
+        LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+
+        // Define a listener that responds to location updates
+        final LocationListener locationListener = new LocationListener() {
+            public void onLocationChanged(android.location.Location location) {
+                // Called when a new location is found by the network location provider.
+
+                Log.d(TAG, "onLocationChanged: " + location.toString() + ", " + String.valueOf(location.getBearing()));
+
+                MyLocation
+                        .getInstance()
+                        .recordLocation(
+                                mGoogleApiClient.getContext().getApplicationContext(),
+                                new Location(0, location) // 0 = My Location
+                        );
+            }
+
+            public void onStatusChanged(String provider, int status, Bundle extras) {
+                Log.d(TAG, "onStatusChanged: " + provider + ", " + status);
+            }
+
+            public void onProviderEnabled(String provider) {
+                Log.d(TAG, "onProviderEnabled: " + provider);
+            }
+
+            public void onProviderDisabled(String provider) {
+                Log.d(TAG, "onProviderDisabled: " + provider);
+            }
+        };
+
+        try {
+            locationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER, locationListener, null);
+        } catch (SecurityException sec) {
+            Log.e(TAG, "updateLocationUsingGPS: ", sec);
+        }
+    }
+
+    private void updateLocationFromLastLocation() {
         try {
             // Note: android.location.Location
             android.location.Location location = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
 
             if (location != null) {
-                Log.d(TAG, "updateLocation: " + location.toString());
+                Log.d(TAG, "updateLocationFromLastLocation: " + location.toString() + ", " + String.valueOf(location.getBearing()));
 
                 MyLocation
                         .getInstance()
@@ -207,7 +274,7 @@ public class BackgroundLocationUpdateManager extends BroadcastReceiver implement
 
             }
         } catch (SecurityException sec) {
-            Log.e(TAG, "updateLocation: Failed getting last location", sec);
+            Log.e(TAG, "updateLocationFromLastLocation: Failed getting last location", sec);
         }
     }
 }
