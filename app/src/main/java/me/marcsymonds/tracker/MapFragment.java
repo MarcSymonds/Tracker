@@ -156,7 +156,9 @@ public class MapFragment
         LocationRequest locationRequest = LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                 .setInterval(interval)
-                .setFastestInterval(fInterval);
+                .setFastestInterval(fInterval)
+                .setSmallestDisplacement(5.0f); // meters
+
         // Request location updates
         try {
             LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, locationRequest, this);
