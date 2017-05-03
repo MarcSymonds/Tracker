@@ -20,6 +20,9 @@ class Pref {
     static final String PREF_MY_LOCATION_BACKGROUND_UPDATES_ENABLED = "my_location_background_updates_enabled";
     static final String PREF_MY_LOCATION_BACKGROUND_UPDATE_INTERVAL = "my_location_background_update_interval";
 
+    static final String PREF_BACKGROUND_LOCATION_UPDATE_LAST_GPS = "bglu_last_gps_update";
+    static final String PREF_BACKGROUND_LOCATION_UPDATE_GPS_INTERVAL = "bglu_gps_update_interval";
+
     static boolean getKeepScreenOn(Context context) {
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
         return sp.getBoolean(PREF_KEEP_SCREEN_ON, false);
