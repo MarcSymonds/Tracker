@@ -39,7 +39,7 @@ class MyLocation {
                 || (mMyLastLocation.distanceTo(location) > 9.0)) {
 
             mMyLocationHistory.recordLocation(location);
-            HistoryRecorder.recordHistory(location);
+            HistoryRecorder.getInstance(context).recordHistory(location);
 
             mMyLastLocation = location;
         } else {

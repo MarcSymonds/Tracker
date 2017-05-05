@@ -1,7 +1,7 @@
 package me.marcsymonds.tracker;
 
-import android.app.Activity;
 import android.content.Context;
+import android.util.Log;
 
 import java.io.File;
 
@@ -13,26 +13,32 @@ class HistoryRecorder {
     static private final String TAG = "HistoryRecorder";
     static private final String RECORDED_HISTORY_DIR = "RecordedHistory";
 
-    static private File mHistoryDir;
-    static private HistoryManager mHistoryManager;
+    private static HistoryRecorder mHistoryRecorder = null;
 
-    static void initialise(Activity activity) {
-        mHistoryDir = activity.getDir(RECORDED_HISTORY_DIR, Context.MODE_PRIVATE);
+    private File mHistoryDir;
+    private HistoryManager mHistoryManager;
+
+    static synchronized HistoryRecorder getInstance(Context context) {
+        if (mHistoryRecorder == null) {
+            mHistoryRecorder = new HistoryRecorder();
+            mHistoryRecorder.initialise(context.getApplicationContext());
+        }
+
+        return mHistoryRecorder;
+    }
+
+    private void initialise(Context context) {
+        mHistoryDir = context.getDir(RECORDED_HISTORY_DIR, Context.MODE_PRIVATE);
 
         mHistoryManager = new HistoryManager(mHistoryDir, -1, 20, true);
     }
 
-    static void tearDown(Activity activity) {
-        mHistoryManager = null;
+    synchronized void recordHistory(Location location) {
+        Log.d(TAG, "recordHistory: " + location.toString());
+        mHistoryManager.recordLocation(location);
     }
 
-    static synchronized void recordHistory(Location location) {
-        if (mHistoryManager != null) {
-            mHistoryManager.recordLocation(location);
-        }
-    }
-
-    static HistoryManager getHistoryManager() {
+    HistoryManager getHistoryManager() {
         return mHistoryManager;
     }
 }

@@ -422,7 +422,7 @@ public class TrackedItem {
         Log.d(TAG, String.format("New location for %s - %s", mName, location.toString()));
 
         mHistory.recordLocation(location);
-        HistoryRecorder.recordHistory(location);
+        HistoryRecorder.getInstance(context).recordHistory(location);
 
         //++mNumberOfResponsesReceived;
         //if (mNumberOfResponsesReceived >= mNumberOfResponses) {

@@ -69,7 +69,6 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
         Telephony.initialise(this);
         TrackedItemButtonHelper.initialise(this);
         TrackedItems.initialise(this.getApplicationContext());
-        HistoryRecorder.initialise(this);
 
         SMSSenderReceiver.setupBroadcastReceiver(this);
         //SMSReceiver.setupBroadcastReceiver(this);
@@ -239,7 +238,6 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
         Log.d(TAG, "onDestroy");
         //SMSReceiver.tearDown(this);
         SMSSenderReceiver.tearDown(this);
-        HistoryRecorder.tearDown(this);
     }
 
     @Override
@@ -306,7 +304,7 @@ public class Tracker extends AppCompatActivity implements IMapFragmentActions, I
             case R.id.main_menu_upload_history_now:
                 if (mHistoryUploader == null || mHistoryUploader.isCompleted()) {
                     mHistoryUploader = new HistoryUploader(this);
-                    String[] files = HistoryRecorder.getHistoryManager().getListOfFilesForUpload();
+                    String[] files = HistoryRecorder.getInstance(getApplicationContext()).getHistoryManager().getListOfFilesForUpload();
                     mHistoryUploader.execute(files);
                 }
                 break;

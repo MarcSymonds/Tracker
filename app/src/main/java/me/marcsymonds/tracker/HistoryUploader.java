@@ -76,7 +76,7 @@ class HistoryUploader extends AsyncTask<String, Integer, HistoryUploaderState> i
         Context context = activity.getApplicationContext();
         mAppID = ApplicationIdentifier.getIdentifier(context);
 
-        mHistoryManager = HistoryRecorder.getHistoryManager();
+        mHistoryManager = HistoryRecorder.getInstance(activity.getApplicationContext()).getHistoryManager();
 
         if (activity instanceof IHistoryUploaderController) {
             mController = (IHistoryUploaderController) activity;
